@@ -16,18 +16,18 @@ export default function Admin({ setTheme }) {
   const [adminTab, setAdminTab] = useState('prayers'); 
   const [activeForm, setActiveForm] = useState(null); 
   
-  // دیتابیس‌ها
   const [prayers, setPrayers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [slides, setSlides] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
-  const [activities, setActivities] = useState([]); // دیتای برنامه‌ها
+  const [activities, setActivities] = useState([]); 
   const [articles, setArticles] = useState([]);
   
   const [socials, setSocials] = useState({ telegram: '', facebook: '', whatsapp: '' });
   const [aboutText, setAboutText] = useState(''); 
   const [footerAddress, setFooterAddress] = useState('');
   const [footerPhone, setFooterPhone] = useState('');
+  const [logoUrl, setLogoUrl] = useState(''); // استیت جدید برای لوگو
   
   const [loading, setLoading] = useState(false);
   const dragItem = useRef();
@@ -37,7 +37,7 @@ export default function Admin({ setTheme }) {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState(''); 
   const [imageUrl, setImageUrl] = useState(''); 
-  const [multipleImages, setMultipleImages] = useState(''); // برای چندین عکس برنامه‌ها
+  const [multipleImages, setMultipleImages] = useState(''); 
   const [content1, setContent1] = useState(''); 
   const [content2, setContent2] = useState(''); 
 
@@ -63,11 +63,12 @@ export default function Admin({ setTheme }) {
       onSnapshot(collection(db, "departments"), (snap) => setDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)))),
       onSnapshot(collection(db, "slider"), (snap) => setSlides(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)))),
       onSnapshot(collection(db, "announcements"), (snap) => setAnnouncements(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)))),
-      onSnapshot(collection(db, "activities"), (snap) => setActivities(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)))), // دریافت برنامه‌ها
+      onSnapshot(collection(db, "activities"), (snap) => setActivities(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)))),
       onSnapshot(collection(db, "articles"), (snap) => setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)))),
       onSnapshot(doc(db, "settings", "socials"), (doc) => { if(doc.exists()) setSocials(doc.data()); }),
       onSnapshot(doc(db, "settings", "about"), (doc) => { if(doc.exists()) setAboutText(doc.data().text || ''); }),
-      onSnapshot(doc(db, "settings", "footer"), (doc) => { if(doc.exists()) { setFooterAddress(doc.data().address || ''); setFooterPhone(doc.data().phone || ''); }})
+      onSnapshot(doc(db, "settings", "footer"), (doc) => { if(doc.exists()) { setFooterAddress(doc.data().address || ''); setFooterPhone(doc.data().phone || ''); }}),
+      onSnapshot(doc(db, "settings", "logo"), (doc) => { if(doc.exists()) setLogoUrl(doc.data().url || ''); }) // خواندن آدرس لوگو از دیتابیس
     ];
     return () => subs.forEach(unsub => unsub());
   }, [user]);
@@ -127,14 +128,13 @@ export default function Admin({ setTheme }) {
     else if (type === 'slider') { data = { title, subtitle, imageUrl }; }
     else if (type === 'announcements' || type === 'articles') { data = { title, summary: subtitle, content: content1, imageUrl, date: new Date().toLocaleDateString('fa-IR') }; }
     else if (type === 'activities') {
-      // جدا کردن لینک عکس‌ها بر اساس خط جدید (Enter)
       const imagesArray = multipleImages.split('\n').map(url => url.trim()).filter(url => url !== '');
       data = { 
         title, 
         summary: subtitle, 
         content: content1, 
         images: imagesArray, 
-        imageUrl: imagesArray.length > 0 ? imagesArray[0] : '', // ذخیره اولین عکس برای لیست‌های صفحه اصلی
+        imageUrl: imagesArray.length > 0 ? imagesArray[0] : '', 
         date: new Date().toLocaleDateString('fa-IR') 
       };
     }
@@ -184,6 +184,7 @@ export default function Admin({ setTheme }) {
       await setDoc(doc(db, "settings", "socials"), { telegram: socials.telegram.replace('@', ''), facebook: socials.facebook, whatsapp: socials.whatsapp.replace('+', '') });
       await setDoc(doc(db, "settings", "about"), { text: aboutText });
       await setDoc(doc(db, "settings", "footer"), { address: footerAddress, phone: footerPhone });
+      await setDoc(doc(db, "settings", "logo"), { url: logoUrl }); // ذخیره آدرس لوگو در دیتابیس
       alert('تنظیمات با موفقیت ذخیره شد.');
     } catch (error) { alert('خطا در ذخیره‌سازی'); } finally { setLoading(false); }
   };
@@ -231,7 +232,6 @@ export default function Admin({ setTheme }) {
               {(activeForm === 'announcements' || activeForm === 'articles') && (
                 <><input type="text" placeholder="عنوان" className="w-full p-3 border border-gray-300 rounded-lg font-bold" value={title} onChange={e => setTitle(e.target.value)} /><input type="text" placeholder="لینک تصویر شاخص" className="w-full p-3 border border-gray-300 rounded-lg text-left" dir="ltr" value={imageUrl} onChange={e => setImageUrl(e.target.value)} /><textarea placeholder="خلاصه کوتاه" rows="2" className="w-full p-3 border border-gray-300 rounded-lg" value={subtitle} onChange={e => setSubtitle(e.target.value)}></textarea><textarea placeholder="متن کامل..." rows="8" className="w-full p-3 border border-gray-300 rounded-lg leading-loose" value={content1} onChange={e => setContent1(e.target.value)}></textarea></>
               )}
-              {/* فرم جدید برای برنامه‌ها و فعالیت‌ها با پشتیبانی از چند عکس */}
               {activeForm === 'activities' && (
                 <>
                   <input type="text" placeholder="عنوان برنامه / فعالیت" className="w-full p-3 border border-gray-300 rounded-lg font-bold" value={title} onChange={e => setTitle(e.target.value)} />
@@ -256,7 +256,6 @@ export default function Admin({ setTheme }) {
         <div key={item.id} draggable onDragStart={(e) => dragItem.current = index} onDragEnter={(e) => dragOverItem.current = index} onDragEnd={() => handleSort(collectionName, list)} onDragOver={(e) => e.preventDefault()} className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 hover:bg-blue-50 cursor-move transition group">
           <div className="flex items-center gap-4">
             <span className="text-gray-400 text-xl">⣿</span>
-            {/* نمایش اولین عکس به عنوان کاور اگر آرایه وجود داشت */}
             {(item.imageUrl || (item.images && item.images.length > 0)) && <img src={item.images ? item.images[0] : item.imageUrl} className="w-12 h-12 object-cover rounded-md" alt="" />}
             <div><strong className="text-gray-800 block text-sm md:text-base">{item.title || item.name}</strong></div>
           </div>
@@ -281,7 +280,6 @@ export default function Admin({ setTheme }) {
       </header>
         
       <div className="max-w-6xl mx-auto px-4 mt-8 animate-fade-up">
-        {/* اضافه شدن تب برنامه‌ها به پنل ادمین */}
         <div className="flex overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-200 mb-6 font-bold text-sm">
           <button onClick={() => setAdminTab('prayers')} className={`flex-1 py-4 px-4 whitespace-nowrap border-b-4 transition ${adminTab === 'prayers' ? 'border-blue-600 text-blue-700 bg-blue-50' : 'border-transparent text-gray-500'}`}>ادعیه</button>
           <button onClick={() => setAdminTab('departments')} className={`flex-1 py-4 px-4 whitespace-nowrap border-b-4 transition ${adminTab === 'departments' ? 'border-blue-600 text-blue-700 bg-blue-50' : 'border-transparent text-gray-500'}`}>بخش‌ها</button>
@@ -302,6 +300,17 @@ export default function Admin({ setTheme }) {
 
           {adminTab === 'settings' && (
             <div className="space-y-6">
+              
+              {/* بخش آپلود لوگو */}
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200">
+                <h2 className="font-bold text-gray-800 mb-4 border-b pb-3 text-xl">لوگوی رسمی سایت</h2>
+                <p className="text-sm text-gray-500 mb-3">یک عکس با پس‌زمینه شفاف (PNG) را در سایت‌هایی مثل Imgur آپلود کنید و لینک آن را اینجا قرار دهید.</p>
+                <div className="flex gap-4 items-center">
+                  <input type="text" placeholder="لینک مستقیم لوگو (مثال: https://.../logo.png)" className="flex-1 p-3 border rounded-xl" dir="ltr" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} />
+                  {logoUrl && <img src={logoUrl} alt="Logo Preview" className="w-16 h-16 object-contain bg-gray-100 rounded-xl border p-1" />}
+                </div>
+              </div>
+
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200">
                 <h2 className="font-bold text-gray-800 mb-6 border-b pb-3 text-xl">تغییر قالب سایت</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

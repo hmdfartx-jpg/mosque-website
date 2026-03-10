@@ -48,6 +48,7 @@ export default function Home() {
 
   const [socials, setSocials] = useState({ telegram: '', facebook: '', whatsapp: '' });
   const [footerSettings, setFooterSettings] = useState({ address: '', phone: '' });
+  const [logoUrl, setLogoUrl] = useState(''); // استیت لوگو
 
   const [timings, setTimings] = useState(null);
   const [displayLocation, setDisplayLocation] = useState('هرات');
@@ -60,17 +61,10 @@ export default function Home() {
   const [countdown, setCountdown] = useState('در حال محاسبه...');
   const [zikr, setZikr] = useState('...');
 
-  // وضعیت لودینگ برای تک تک بخش‌های سایت
   const [loadingStats, setLoadingStats] = useState({
-    prayers: false,
-    departments: false,
-    slides: false,
-    announcements: false,
-    activities: false,
-    articles: false,
-    socials: false,
-    footer: false,
-    timings: false
+    prayers: false, departments: false, slides: false,
+    announcements: false, activities: false, articles: false,
+    socials: false, footer: false, timings: false, logo: false
   });
 
   const dariMonths = ['حمل', 'ثور', 'جوزا', 'سرطان', 'اسد', 'سنبله', 'میزان', 'عقرب', 'قوس', 'جدی', 'دلو', 'حوت'];
@@ -84,6 +78,11 @@ export default function Home() {
       ayah: ayahsList[Math.floor(Math.random() * ayahsList.length)],
       hadith: hadithsList[Math.floor(Math.random() * hadithsList.length)],
       hokm: ahkamList[Math.floor(Math.random() * ahkamList.length)]
+    });
+
+    const unsubLogo = onSnapshot(doc(db, 'settings', 'logo'), (docSnap) => {
+      if(docSnap.exists()) setLogoUrl(docSnap.data().url || '');
+      setLoadingStats(prev => ({ ...prev, logo: true }));
     });
 
     const unsubPrayers = onSnapshot(collection(db, 'prayers'), (snap) => {
@@ -126,7 +125,7 @@ export default function Home() {
       setLoadingStats(prev => ({ ...prev, footer: true }));
     });
 
-    return () => { unsubPrayers(); unsubDepts(); unsubSlides(); unsubAnnc(); unsubActs(); unsubArts(); unsubSocials(); unsubFooter(); };
+    return () => { unsubPrayers(); unsubDepts(); unsubSlides(); unsubAnnc(); unsubActs(); unsubArts(); unsubSocials(); unsubFooter(); unsubLogo(); };
   }, []);
 
   useEffect(() => {
@@ -191,7 +190,6 @@ export default function Home() {
     } catch (error) { 
       console.log(error); 
     } finally {
-      // در هر صورت (چه موفق چه خطا) لودینگ اوقات شرعی را تمام شده در نظر می‌گیریم تا سایت متوقف نشود
       setLoadingStats(prev => ({ ...prev, timings: true }));
     }
   };
@@ -233,21 +231,23 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [timings]);
 
-  // بررسی اینکه آیا تمام بخش‌های دیتابیس با موفقیت لود شده‌اند یا خیر
   const isAppReady = Object.values(loadingStats).every(Boolean);
 
-  // اگر هنوز اطلاعات در حال دریافت است، صفحه اختصاصی لودینگ را نشان بده
   if (!isAppReady) {
     return (
       <div className="fixed inset-0 z-[9999] bg-theme-bg flex flex-col justify-center items-center">
-        <div className="relative w-24 h-24 mb-8">
+        <div className="relative w-32 h-32 mb-8">
           <div className="absolute inset-0 border-4 border-theme-primary border-opacity-20 rounded-full"></div>
           <div className="absolute inset-0 border-4 border-transparent border-t-theme-accent rounded-full animate-spin"></div>
-          <div className="absolute inset-0 flex items-center justify-center text-theme-primary">
-            {/* آیکون مسجد در حال تپش */}
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2L8 6v3H4v13h16V9h-4V6l-4-4zm0 2.8l2 2V9h-4V6.8l2-2zM6 11h3v9H6v-9zm12 0v9h-3v-9h3zM10 11h4v4h-4v-4zm0 6h4v3h-4v-3z"/>
-            </svg>
+          <div className="absolute inset-0 flex items-center justify-center p-4">
+            {logoUrl ? (
+              // نمایش لوگوی رنگی آپلود شده در صفحه لودینگ
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain animate-pulse drop-shadow-md" />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 animate-pulse text-theme-primary" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L8 6v3H4v13h16V9h-4V6l-4-4zm0 2.8l2 2V9h-4V6.8l2-2zM6 11h3v9H6v-9zm12 0v9h-3v-9h3zM10 11h4v4h-4v-4zm0 6h4v3h-4v-3z"/>
+              </svg>
+            )}
           </div>
         </div>
         <h2 className="text-xl md:text-3xl font-bold text-theme-text mb-3 tracking-wide">مسجد جامع حضرت خدیجه کبری <span className="text-theme-accent">(س)</span></h2>
@@ -256,23 +256,9 @@ export default function Home() {
     );
   }
 
-  // اگر تمام اطلاعات دریافت شده بود، صفحه اصلی را رندر کن
   return (
     <div className="view-section pb-0 overflow-hidden animate-fade-in">
-      <style>{`
-        /* انیمیشن حلقه بی‌نهایت از چپ به راست */
-        @keyframes marquee-right-seamless {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0%); }
-        }
-        .animate-marquee-right {
-          display: flex;
-          width: max-content;
-          animation: marquee-right-seamless 140s linear infinite;
-        }
-      `}</style>
 
-      {/* اسلایدر هیرو با لایه تاریک ملایم */}
       <header className="relative bg-gray-900 h-80 md:h-[32rem] overflow-hidden shadow-lg animate-fade-in">
         {slides.length > 0 ? slides.map((slide, index) => (
           <div key={slide.id} className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
@@ -294,7 +280,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* نوار تاریخ و ذکر */}
       <div className="bg-theme-secondary text-white py-3 px-4 shadow text-center relative z-20">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm font-bold">
           <p className="font-arabic bg-black bg-opacity-30 px-5 py-2 rounded-full text-white transition-colors duration-300 shadow-sm">
@@ -312,7 +297,6 @@ export default function Home() {
 
       <div className="max-w-6xl mx-auto px-4 mt-10 relative z-20">
         
-        {/* بخش اوقات شرعی با هدر هم‌طراز */}
         <section className="bg-theme-surface rounded-2xl shadow-md p-5 mb-8 border border-opacity-20 border-theme-primary relative overflow-visible animate-fade-up">
           {isCitySearchOpen && (
             <div className="absolute inset-0 bg-theme-surface z-30 flex flex-col items-center justify-center p-4 backdrop-blur-md bg-opacity-95 animate-fade-in rounded-2xl shadow-xl">
@@ -369,7 +353,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* مناسبت روز */}
         <section className="bg-theme-surface rounded-2xl shadow-md p-5 mb-8 border-r-4 border-theme-accent flex items-start gap-4 transition-all duration-300 hover:shadow-lg animate-fade-up">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-theme-accent flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
           <div className="w-full">
@@ -384,7 +367,6 @@ export default function Home() {
           
           <div className="lg:col-span-2 space-y-8">
             
-            {/* محتوای روزانه (بانک اطلاعاتی داینامیک) */}
             <section className="bg-theme-surface rounded-3xl shadow-md overflow-hidden border border-opacity-20 border-theme-primary animate-fade-up delay-200">
               <div className="flex bg-theme-bg">
                 {['ayah', 'hadith', 'ahkam'].map(t => (
@@ -398,7 +380,8 @@ export default function Home() {
                   {activeTab === 'ahkam' ? (
                     <>
                       <p className="text-theme-text text-base md:text-lg leading-loose mb-6 font-bold">{dailyData.hokm.text}</p>
-                      <div className="flex justify-center items-center gap-2 text-xs md:text-sm text-theme-accent bg-theme-primary bg-opacity-5 inline-flex px-4 py-2 rounded-xl font-bold">
+                      {/* اخطار CSS در خط پایین رفع شد (حذف کلمه flex) */}
+                      <div className="inline-flex justify-center items-center gap-2 text-xs md:text-sm text-theme-accent bg-theme-primary bg-opacity-5 px-4 py-2 rounded-xl font-bold">
                         <span>{dailyData.hokm.author}</span>
                         <span>-</span>
                         <span>{dailyData.hokm.ref}</span>
@@ -415,7 +398,6 @@ export default function Home() {
               </div>
             </section>
 
-            {/* اطلاعیه‌ها و برنامه‌ها در یک ردیف */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary flex flex-col h-full hover:shadow-md transition-shadow duration-300 animate-fade-up delay-300">
                 <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
@@ -454,7 +436,6 @@ export default function Home() {
               </section>
             </div>
 
-            {/* بخش مقالات در پایین */}
             <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary w-full hover:shadow-md transition-shadow duration-300 animate-fade-up delay-400">
               <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
                 <h2 className="font-bold text-lg text-theme-text">آخرین مقالات معارفی</h2>
@@ -548,11 +529,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* فوتر */}
+      {/* فوتر با اضافه شدن لوگوی تک‌رنگ */}
       <footer className="bg-theme-primary text-white relative overflow-hidden mt-8 pt-12">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 pb-12">
           <div>
-            <h3 className="font-bold text-2xl mb-5 text-theme-accent">درباره مسجد</h3>
+            <div className="flex items-center gap-3 mb-5">
+              {logoUrl && <img src={logoUrl} alt="Logo" className="w-12 h-12 object-contain" style={{ filter: 'brightness(0) invert(1)' }} />}
+              <h3 className="font-bold text-2xl text-theme-accent">درباره مسجد</h3>
+            </div>
             <p className="text-sm leading-loose opacity-90 text-justify">
               مسجد جامع حضرت خدیجه کبرا (س) پایگاهی برای ترویج معارف ناب اسلامی و مکتب اهل‌بیت (ع) می‌باشد که همواره در خدمت مؤمنین خداجو است.
             </p>

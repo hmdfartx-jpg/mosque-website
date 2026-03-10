@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from './firebase';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Admin from './pages/Admin';
@@ -10,7 +12,7 @@ import SingleAnnouncement from './pages/SingleAnnouncement';
 import Activities from './pages/Activities';
 import SingleActivity from './pages/SingleActivity';
 import Articles from './pages/Articles';
-import SingleArticle from './pages/SingleArticle'; // اضافه شدن صفحه مقالات
+import SingleArticle from './pages/SingleArticle';
 import About from './pages/About';
 
 function AnimatedRoutes({ theme, setTheme }) {
@@ -28,7 +30,7 @@ function AnimatedRoutes({ theme, setTheme }) {
         <Route path="/activities" element={<Activities />} />
         <Route path="/activities/:id" element={<SingleActivity />} />
         <Route path="/articles" element={<Articles />} />
-        <Route path="/articles/:id" element={<SingleArticle />} /> {/* مسیر جدید مقالات */}
+        <Route path="/articles/:id" element={<SingleArticle />} />
         <Route path="/about" element={<About />} />
       </Routes>
     </div>
@@ -38,9 +40,26 @@ function AnimatedRoutes({ theme, setTheme }) {
 export default function App() {
   const [theme, setTheme] = useState('normal');
 
+  // اعمال تم
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  // تنظیم داینامیک لوگوی تب مرورگر (Favicon)
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'logo'), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().url) {
+        let link = document.querySelector("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = docSnap.data().url;
+      }
+    });
+    return () => unsub();
+  }, []);
 
   return (
     <Router>
