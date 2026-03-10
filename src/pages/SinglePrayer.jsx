@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom'; // اضافه شدن پورتال برای فریز کردن قطعی
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useParams, Link } from 'react-router-dom';
@@ -7,6 +8,7 @@ export default function SinglePrayer() {
   const { id } = useParams();
   const [prayer, setPrayer] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false); // بررسی لود شدن در مرورگر
 
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(0.5); 
@@ -14,13 +16,13 @@ export default function SinglePrayer() {
   const [showTranslation, setShowTranslation] = useState(false); 
   const [arabicFont, setArabicFont] = useState('default'); 
   
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
   const wakeLockRef = useRef(null);
   const accumulatedScroll = useRef(0);
 
   useEffect(() => {
+    setMounted(true);
     const fetchPrayer = async () => {
       const docSnap = await getDoc(doc(db, "prayers", id));
       if (docSnap.exists()) {
@@ -32,15 +34,6 @@ export default function SinglePrayer() {
     };
     fetchPrayer();
   }, [id]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 10) setIsScrolled(true);
-      else setIsScrolled(false);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -96,8 +89,97 @@ export default function SinglePrayer() {
   if (loading) return <div className="min-h-screen flex justify-center items-center"><div className="loader"></div></div>;
   if (!prayer) return <div className="text-center p-20 font-bold text-theme-text">دعا یافت نشد.</div>;
 
+  // خروج نوارهای بالا و پایین از انیمیشن‌ها با استفاده از React Portal
+  const renderFixedOverlays = () => {
+    if (!mounted) return null;
+    return createPortal(
+      <div className="font-sans" dir="rtl">
+        {/* هدر بالا کاملاً فریز شده */}
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-theme-primary text-white shadow-lg w-full py-2.5">
+          <div className="max-w-4xl mx-auto px-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <Link to="/prayers" className="bg-white bg-opacity-20 p-2 rounded-full hover:bg-opacity-30 transition flex-shrink-0" title="بازگشت به لیست">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+              </Link>
+              <h1 className="font-bold text-theme-accent truncate text-sm md:text-xl">{prayer.title}</h1>
+            </div>
+            
+            <div className="flex items-center bg-white bg-opacity-10 px-2 py-1.5 md:px-3 md:py-2 rounded-xl flex-shrink-0">
+              <div className="flex md:hidden items-center gap-2.5 font-bold">
+                <div className="relative flex items-center justify-center w-6 h-6 text-white hover:text-theme-accent transition">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  <select value={arabicFont} onChange={(e) => setArabicFont(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" dir="rtl">
+                    <option value="default">عثمان طه</option>
+                    <option value="'Nabi', sans-serif">نبی</option>
+                    <option value="'Amiri', serif">امیری</option>
+                    <option value="'Scheherazade New', serif">شهرزاد</option>
+                    <option value="'Lateef', serif">لطیف</option>
+                    <option value="'Traditional Arabic', serif">عربی سنتی</option>
+                    <option value="'KFGQPC Uthman Taha Naskh', 'Uthman Taha', serif">عثمان طه نسخ</option>
+                    <option value="'Al Qalam Quran', serif">القلم</option>
+                    <option value="'B Nazanin', 'Nazanin', sans-serif">بی نازنین</option>
+                    <option value="'B Yekan', 'Yekan', sans-serif">یکان</option>
+                    <option value="Tahoma, sans-serif">تاهوما</option>
+                    <option value="system-ui, sans-serif">فونت سیستم</option>
+                  </select>
+                </div>
+                <div className="w-px h-4 bg-white bg-opacity-30"></div>
+                <button onClick={() => setShowArabic(!showArabic)} className={`font-arabic text-lg leading-none pt-1 transition-colors ${showArabic ? 'text-theme-accent' : 'text-white opacity-40'}`}>ع</button>
+                <button onClick={() => setShowTranslation(!showTranslation)} className={`text-base leading-none transition-colors ${showTranslation ? 'text-theme-accent' : 'text-white opacity-40'}`}>ف</button>
+                <div className="w-px h-4 bg-white bg-opacity-30"></div>
+                <button onClick={toggleFullScreen} className="text-white hover:text-theme-accent transition pl-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {isFullscreen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 9V4m0 5h5M15 15v5m0-5h-5" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />}
+                  </svg>
+                </button>
+              </div>
+
+              <div className="hidden md:flex items-center gap-4 text-xs font-bold">
+                <select value={arabicFont} onChange={(e) => setArabicFont(e.target.value)} className="bg-transparent text-white outline-none border-b border-theme-accent border-opacity-50 pb-1 cursor-pointer">
+                  <option value="default" className="text-gray-800">عثمان طه</option>
+                  <option value="'Nabi', sans-serif" className="text-gray-800">نبی</option>
+                  <option value="'Amiri', serif" className="text-gray-800">امیری</option>
+                  <option value="'Scheherazade New', serif" className="text-gray-800">شهرزاد</option>
+                  <option value="'Lateef', serif" className="text-gray-800">لطیف</option>
+                  <option value="'Traditional Arabic', serif" className="text-gray-800">عربی سنتی</option>
+                  <option value="'KFGQPC Uthman Taha Naskh', 'Uthman Taha', serif" className="text-gray-800">عثمان طه نسخ</option>
+                  <option value="'Al Qalam Quran', serif" className="text-gray-800">القلم</option>
+                  <option value="'B Nazanin', 'Nazanin', sans-serif" className="text-gray-800">بی نازنین</option>
+                  <option value="'B Yekan', 'Yekan', sans-serif" className="text-gray-800">یکان</option>
+                  <option value="Tahoma, sans-serif" className="text-gray-800">تاهوما</option>
+                  <option value="system-ui, sans-serif" className="text-gray-800">فونت سیستم</option>
+                </select>
+                <div className="w-px h-4 bg-white bg-opacity-30"></div>
+                <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={showArabic} onChange={(e) => setShowArabic(e.target.checked)} className="accent-theme-accent w-4 h-4 cursor-pointer"/> متن عربی</label>
+                <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={showTranslation} onChange={(e) => setShowTranslation(e.target.checked)} className="accent-theme-accent w-4 h-4 cursor-pointer"/> ترجمه</label>
+                <div className="w-px h-4 bg-white bg-opacity-30"></div>
+                <button onClick={toggleFullScreen} className="text-white hover:text-theme-accent transition" title="نمایش تمام صفحه">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {isFullscreen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 9V4m0 5h5M15 15v5m0-5h-5" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />}
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* نوار کنترل پایین کاملاً فریز شده */}
+        <div className="fixed bottom-0 left-0 right-0 w-full z-[9999] bg-theme-surface border-t border-theme-primary border-opacity-20 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.15)] flex flex-wrap justify-center items-center gap-4">
+          <div className="flex items-center gap-2 bg-theme-bg px-4 py-2 rounded-full border border-theme-primary border-opacity-10 shadow-inner">
+            <label className="text-xs font-bold text-theme-textMuted whitespace-nowrap">تنظیم سرعت حرکت:</label>
+            <input type="range" min="0.1" max="3" step="0.1" value={scrollSpeed} onChange={(e) => setScrollSpeed(Number(e.target.value))} className="w-24 md:w-40 accent-theme-primary cursor-pointer" dir="ltr" />
+          </div>
+          <button onClick={() => setIsAutoScrolling(!isAutoScrolling)} className={`px-6 py-2.5 rounded-full font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 ${isAutoScrolling ? 'bg-red-500 text-white' : 'bg-theme-primary text-white'}`}>
+            {isAutoScrolling ? <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg> توقف حرکت</> : <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> حرکت خودکار</>}
+          </button>
+        </div>
+      </div>,
+      document.body
+    );
+  };
+
   return (
-    <div className="bg-theme-bg min-h-screen flex flex-col pt-20 pb-32 animate-fade-in relative">
+    <div className="bg-theme-bg min-h-screen flex flex-col pt-24 pb-32 relative animate-fade-in">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Lateef&family=Scheherazade+New:wght@400;700&display=swap');
         :root[data-theme='normal'] { --diacritic-color: #e11d48; } 
@@ -107,79 +189,8 @@ export default function SinglePrayer() {
         nav { display: none !important; }
       `}</style>
 
-      {/* هدر بالا (ثابت) */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-theme-primary text-white shadow-lg w-full py-2.5">
-        <div className="max-w-4xl mx-auto px-3 flex items-center justify-between gap-2">
-          
-          <div className="flex items-center gap-2 overflow-hidden">
-            <Link to="/prayers" className="bg-white bg-opacity-20 p-2 rounded-full hover:bg-opacity-30 transition flex-shrink-0" title="بازگشت به لیست">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-            </Link>
-            <h1 className="font-bold text-theme-accent truncate text-sm md:text-xl">{prayer.title}</h1>
-          </div>
-          
-          <div className="flex items-center bg-white bg-opacity-10 px-2 py-1.5 md:px-3 md:py-2 rounded-xl flex-shrink-0">
-            
-            {/* نمای موبایل */}
-            <div className="flex md:hidden items-center gap-2.5 font-bold">
-              <div className="relative flex items-center justify-center w-6 h-6 text-white hover:text-theme-accent transition">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                <select value={arabicFont} onChange={(e) => setArabicFont(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" dir="rtl">
-                  <option value="default">عثمان طه</option>
-                  <option value="'Nabi', sans-serif">نبی</option>
-                  <option value="'Amiri', serif">امیری</option>
-                  <option value="'Scheherazade New', serif">شهرزاد</option>
-                  <option value="'Lateef', serif">لطیف</option>
-                  <option value="'Traditional Arabic', serif">عربی سنتی</option>
-                  <option value="'KFGQPC Uthman Taha Naskh', 'Uthman Taha', serif">عثمان طه نسخ</option>
-                  <option value="'Al Qalam Quran', serif">القلم</option>
-                  <option value="'B Nazanin', 'Nazanin', sans-serif">بی نازنین</option>
-                  <option value="'B Yekan', 'Yekan', sans-serif">یکان</option>
-                  <option value="Tahoma, sans-serif">تاهوما</option>
-                  <option value="system-ui, sans-serif">فونت سیستم</option>
-                </select>
-              </div>
-              <div className="w-px h-4 bg-white bg-opacity-30"></div>
-              <button onClick={() => setShowArabic(!showArabic)} className={`font-arabic text-lg leading-none pt-1 transition-colors ${showArabic ? 'text-theme-accent' : 'text-white opacity-40'}`}>ع</button>
-              <button onClick={() => setShowTranslation(!showTranslation)} className={`text-base leading-none transition-colors ${showTranslation ? 'text-theme-accent' : 'text-white opacity-40'}`}>ف</button>
-              <div className="w-px h-4 bg-white bg-opacity-30"></div>
-              <button onClick={toggleFullScreen} className="text-white hover:text-theme-accent transition pl-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {isFullscreen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 9V4m0 5h5M15 15v5m0-5h-5" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />}
-                </svg>
-              </button>
-            </div>
-
-            {/* نمای دسکتاپ */}
-            <div className="hidden md:flex items-center gap-4 text-xs font-bold">
-              <select value={arabicFont} onChange={(e) => setArabicFont(e.target.value)} className="bg-transparent text-white outline-none border-b border-theme-accent border-opacity-50 pb-1 cursor-pointer">
-                <option value="default" className="text-gray-800">عثمان طه</option>
-                <option value="'Nabi', sans-serif" className="text-gray-800">نبی</option>
-                <option value="'Amiri', serif" className="text-gray-800">امیری</option>
-                <option value="'Scheherazade New', serif" className="text-gray-800">شهرزاد</option>
-                <option value="'Lateef', serif" className="text-gray-800">لطیف</option>
-                <option value="'Traditional Arabic', serif" className="text-gray-800">عربی سنتی</option>
-                <option value="'KFGQPC Uthman Taha Naskh', 'Uthman Taha', serif" className="text-gray-800">عثمان طه نسخ</option>
-                <option value="'Al Qalam Quran', serif" className="text-gray-800">القلم</option>
-                <option value="'B Nazanin', 'Nazanin', sans-serif" className="text-gray-800">بی نازنین</option>
-                <option value="'B Yekan', 'Yekan', sans-serif" className="text-gray-800">یکان</option>
-                <option value="Tahoma, sans-serif" className="text-gray-800">تاهوما</option>
-                <option value="system-ui, sans-serif" className="text-gray-800">فونت سیستم</option>
-              </select>
-              <div className="w-px h-4 bg-white bg-opacity-30"></div>
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={showArabic} onChange={(e) => setShowArabic(e.target.checked)} className="accent-theme-accent w-4 h-4 cursor-pointer"/> متن عربی</label>
-              <label className="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" checked={showTranslation} onChange={(e) => setShowTranslation(e.target.checked)} className="accent-theme-accent w-4 h-4 cursor-pointer"/> ترجمه</label>
-              <div className="w-px h-4 bg-white bg-opacity-30"></div>
-              <button onClick={toggleFullScreen} className="text-white hover:text-theme-accent transition" title="نمایش تمام صفحه">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {isFullscreen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 9V4m0 5h5M15 15v5m0-5h-5" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />}
-                </svg>
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </div>
+      {/* فراخوانی نوارهای فریز شده */}
+      {renderFixedOverlays()}
 
       {/* محتوای دعا */}
       <div className="max-w-3xl mx-auto px-4 py-8 flex-1 w-full">
@@ -202,18 +213,6 @@ export default function SinglePrayer() {
           </div>
         ))}
       </div>
-
-      {/* نوار کنترل اسکرول - 100% تضمینی در پایین صفحه فریز می‌شود */}
-      <div className="fixed bottom-0 left-0 w-full z-[999] bg-theme-surface border-t border-theme-primary border-opacity-20 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.15)] flex flex-wrap justify-center items-center gap-4 transition-all">
-        <div className="flex items-center gap-2 bg-theme-bg px-4 py-2 rounded-full border border-theme-primary border-opacity-10 shadow-inner">
-          <label className="text-xs font-bold text-theme-textMuted whitespace-nowrap">تنظیم سرعت حرکت:</label>
-          <input type="range" min="0.1" max="3" step="0.1" value={scrollSpeed} onChange={(e) => setScrollSpeed(Number(e.target.value))} className="w-24 md:w-40 accent-theme-primary cursor-pointer" dir="ltr" />
-        </div>
-        <button onClick={() => setIsAutoScrolling(!isAutoScrolling)} className={`px-6 py-2.5 rounded-full font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 ${isAutoScrolling ? 'bg-red-500 text-white' : 'bg-theme-primary text-white'}`}>
-          {isAutoScrolling ? <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg> توقف حرکت</> : <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> حرکت خودکار</>}
-        </button>
-      </div>
-
     </div>
   );
 }
