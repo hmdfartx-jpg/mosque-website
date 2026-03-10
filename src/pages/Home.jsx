@@ -60,6 +60,19 @@ export default function Home() {
   const [countdown, setCountdown] = useState('در حال محاسبه...');
   const [zikr, setZikr] = useState('...');
 
+  // وضعیت لودینگ برای تک تک بخش‌های سایت
+  const [loadingStats, setLoadingStats] = useState({
+    prayers: false,
+    departments: false,
+    slides: false,
+    announcements: false,
+    activities: false,
+    articles: false,
+    socials: false,
+    footer: false,
+    timings: false
+  });
+
   const dariMonths = ['حمل', 'ثور', 'جوزا', 'سرطان', 'اسد', 'سنبله', 'میزان', 'عقرب', 'قوس', 'جدی', 'دلو', 'حوت'];
   const zikrWeekly = [ "یا ذَالجَلالِ وَ الاِکرام", "یا قاضیَ الحاجات", "یا اَرحَمَ الرّاحِمین", "یا حَیُّ یا قَیّوم", "لا اِلهَ اِلّا اللهُ المَلِکُ الحَقُّ المُبین", "اَللّهُمَّ صَلِّ عَلی مُحَمَّدٍ وَ آلِ مُحَمَّدٍ", "یا رَبَّ العالَمین" ];
   const toPersianNum = (num) => num.toString().replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
@@ -73,17 +86,45 @@ export default function Home() {
       hokm: ahkamList[Math.floor(Math.random() * ahkamList.length)]
     });
 
-    const unsubPrayers = onSnapshot(collection(db, 'prayers'), (snap) => setPrayers(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)).slice(0, 6)));
-    const unsubDepts = onSnapshot(collection(db, 'departments'), (snap) => setDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0))));
-    const unsubSlides = onSnapshot(collection(db, 'slider'), (snap) => setSlides(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0))));
-    const unsubAnnc = onSnapshot(query(collection(db, 'announcements'), orderBy('date', 'desc'), limit(3)), (snap) => setRecentAnnouncements(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-    const unsubActs = onSnapshot(query(collection(db, 'activities'), orderBy('date', 'desc'), limit(3)), (snap) => setRecentActivities(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+    const unsubPrayers = onSnapshot(collection(db, 'prayers'), (snap) => {
+      setPrayers(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)).slice(0, 6));
+      setLoadingStats(prev => ({ ...prev, prayers: true }));
+    });
     
-    // مقالات: محدود به 10 عدد شده است
-    const unsubArts = onSnapshot(query(collection(db, 'articles'), orderBy('date', 'desc'), limit(10)), (snap) => setRecentArticles(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+    const unsubDepts = onSnapshot(collection(db, 'departments'), (snap) => {
+      setDepartments(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)));
+      setLoadingStats(prev => ({ ...prev, departments: true }));
+    });
     
-    const unsubSocials = onSnapshot(doc(db, 'settings', 'socials'), (docSnap) => docSnap.exists() && setSocials(docSnap.data()));
-    const unsubFooter = onSnapshot(doc(db, 'settings', 'footer'), (docSnap) => docSnap.exists() && setFooterSettings(docSnap.data()));
+    const unsubSlides = onSnapshot(collection(db, 'slider'), (snap) => {
+      setSlides(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)));
+      setLoadingStats(prev => ({ ...prev, slides: true }));
+    });
+    
+    const unsubAnnc = onSnapshot(query(collection(db, 'announcements'), orderBy('date', 'desc'), limit(3)), (snap) => {
+      setRecentAnnouncements(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      setLoadingStats(prev => ({ ...prev, announcements: true }));
+    });
+    
+    const unsubActs = onSnapshot(query(collection(db, 'activities'), orderBy('date', 'desc'), limit(3)), (snap) => {
+      setRecentActivities(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      setLoadingStats(prev => ({ ...prev, activities: true }));
+    });
+    
+    const unsubArts = onSnapshot(query(collection(db, 'articles'), orderBy('date', 'desc'), limit(10)), (snap) => {
+      setRecentArticles(snap.docs.map(d => ({id: d.id, ...d.data()})));
+      setLoadingStats(prev => ({ ...prev, articles: true }));
+    });
+    
+    const unsubSocials = onSnapshot(doc(db, 'settings', 'socials'), (docSnap) => {
+      if(docSnap.exists()) setSocials(docSnap.data());
+      setLoadingStats(prev => ({ ...prev, socials: true }));
+    });
+    
+    const unsubFooter = onSnapshot(doc(db, 'settings', 'footer'), (docSnap) => {
+      if(docSnap.exists()) setFooterSettings(docSnap.data());
+      setLoadingStats(prev => ({ ...prev, footer: true }));
+    });
 
     return () => { unsubPrayers(); unsubDepts(); unsubSlides(); unsubAnnc(); unsubActs(); unsubArts(); unsubSocials(); unsubFooter(); };
   }, []);
@@ -147,7 +188,12 @@ export default function Home() {
       } else {
         alert('متأسفانه شهر مورد نظر یافت نشد.');
       }
-    } catch (error) { console.log(error); }
+    } catch (error) { 
+      console.log(error); 
+    } finally {
+      // در هر صورت (چه موفق چه خطا) لودینگ اوقات شرعی را تمام شده در نظر می‌گیریم تا سایت متوقف نشود
+      setLoadingStats(prev => ({ ...prev, timings: true }));
+    }
   };
 
   const handleCitySearch = (val) => {
@@ -187,9 +233,45 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [timings]);
 
+  // بررسی اینکه آیا تمام بخش‌های دیتابیس با موفقیت لود شده‌اند یا خیر
+  const isAppReady = Object.values(loadingStats).every(Boolean);
+
+  // اگر هنوز اطلاعات در حال دریافت است، صفحه اختصاصی لودینگ را نشان بده
+  if (!isAppReady) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-theme-bg flex flex-col justify-center items-center">
+        <div className="relative w-24 h-24 mb-8">
+          <div className="absolute inset-0 border-4 border-theme-primary border-opacity-20 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-transparent border-t-theme-accent rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center text-theme-primary">
+            {/* آیکون مسجد در حال تپش */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L8 6v3H4v13h16V9h-4V6l-4-4zm0 2.8l2 2V9h-4V6.8l2-2zM6 11h3v9H6v-9zm12 0v9h-3v-9h3zM10 11h4v4h-4v-4zm0 6h4v3h-4v-3z"/>
+            </svg>
+          </div>
+        </div>
+        <h2 className="text-xl md:text-3xl font-bold text-theme-text mb-3 tracking-wide">مسجد جامع حضرت خدیجه کبری <span className="text-theme-accent">(س)</span></h2>
+        <p className="text-theme-textMuted text-sm md:text-base font-bold animate-pulse">در حال دریافت اطلاعات از سرور...</p>
+      </div>
+    );
+  }
+
+  // اگر تمام اطلاعات دریافت شده بود، صفحه اصلی را رندر کن
   return (
-    <div className="view-section pb-0 overflow-hidden">
-      
+    <div className="view-section pb-0 overflow-hidden animate-fade-in">
+      <style>{`
+        /* انیمیشن حلقه بی‌نهایت از چپ به راست */
+        @keyframes marquee-right-seamless {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(0%); }
+        }
+        .animate-marquee-right {
+          display: flex;
+          width: max-content;
+          animation: marquee-right-seamless 140s linear infinite;
+        }
+      `}</style>
+
       {/* اسلایدر هیرو با لایه تاریک ملایم */}
       <header className="relative bg-gray-900 h-80 md:h-[32rem] overflow-hidden shadow-lg animate-fade-in">
         {slides.length > 0 ? slides.map((slide, index) => (
@@ -230,7 +312,7 @@ export default function Home() {
 
       <div className="max-w-6xl mx-auto px-4 mt-10 relative z-20">
         
-        {/* بخش اوقات شرعی */}
+        {/* بخش اوقات شرعی با هدر هم‌طراز */}
         <section className="bg-theme-surface rounded-2xl shadow-md p-5 mb-8 border border-opacity-20 border-theme-primary relative overflow-visible animate-fade-up">
           {isCitySearchOpen && (
             <div className="absolute inset-0 bg-theme-surface z-30 flex flex-col items-center justify-center p-4 backdrop-blur-md bg-opacity-95 animate-fade-in rounded-2xl shadow-xl">
@@ -302,7 +384,7 @@ export default function Home() {
           
           <div className="lg:col-span-2 space-y-8">
             
-            {/* محتوای روزانه */}
+            {/* محتوای روزانه (بانک اطلاعاتی داینامیک) */}
             <section className="bg-theme-surface rounded-3xl shadow-md overflow-hidden border border-opacity-20 border-theme-primary animate-fade-up delay-200">
               <div className="flex bg-theme-bg">
                 {['ayah', 'hadith', 'ahkam'].map(t => (
@@ -333,7 +415,7 @@ export default function Home() {
               </div>
             </section>
 
-            {/* اطلاعیه‌ها و برنامه‌ها در یک ردیف (لینک شده به صفحه اختصاصی) */}
+            {/* اطلاعیه‌ها و برنامه‌ها در یک ردیف */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary flex flex-col h-full hover:shadow-md transition-shadow duration-300 animate-fade-up delay-300">
                 <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
@@ -361,7 +443,6 @@ export default function Home() {
                 <div className="space-y-4 flex-1">
                   {recentActivities.map(item => (
                     <Link to={`/activities/${item.id}`} key={item.id} className="flex bg-theme-bg rounded-xl border border-theme-primary border-opacity-10 hover:-translate-y-1 hover:shadow-sm transition-all duration-300 overflow-hidden group">
-                      {/* نمایش عکس اول برای فعالیت‌ها */}
                       {(item.imageUrl || (item.images && item.images.length > 0)) && <img src={item.images && item.images.length > 0 ? item.images[0] : item.imageUrl} alt="" className="w-20 sm:w-24 object-cover flex-shrink-0" />}
                       <div className="p-3 flex-1 flex flex-col justify-center">
                         <h3 className="font-bold text-sm text-theme-text mb-1 line-clamp-1">{item.title}</h3>
@@ -373,7 +454,7 @@ export default function Home() {
               </section>
             </div>
 
-            {/* بخش مقالات (بدون عکس و تنظیم شده در دو ستون، لینک شده به صفحه مقاله) */}
+            {/* بخش مقالات در پایین */}
             <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary w-full hover:shadow-md transition-shadow duration-300 animate-fade-up delay-400">
               <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
                 <h2 className="font-bold text-lg text-theme-text">آخرین مقالات معارفی</h2>
