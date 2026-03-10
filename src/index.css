@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for Dynamic Theming */
+:root, [data-theme="normal"] {
+    --color-primary: #006666;
+    --color-secondary: #004d4d;
+    --color-accent: #D4AF37; 
+    --color-bg: #FDFBF0; 
+    --color-surface: #ffffff;
+    --color-text: #1f2937;
+    --color-text-muted: #4b5563;
+}
+
+[data-theme="mourning"] {
+    --color-primary: #1a1a1a;
+    --color-secondary: #000000;
+    --color-accent: #b8973b; 
+    --color-bg: #121212; 
+    --color-surface: #262626;
+    --color-text: #f3f4f6;
+    --color-text-muted: #9ca3af;
+}
+
+[data-theme="joyful"] {
+    --color-primary: #10b981;
+    --color-secondary: #059669;
+    --color-accent: #fbbf24; 
+    --color-bg: #f0fdf4; 
+    --color-surface: #ffffff;
+    --color-text: #064e3b;
+    --color-text-muted: #047857;
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    transition: all 0.3s ease;
+    background-image: url('data:image/svg+xml;utf8,<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2v2H20v-1.5zM0 20h2v20H0V20zm4 0h2v20H4V20zm4 0h2v20H8V20zm4 0h2v20h-2V20zm4 0h2v20h-2V20zm4 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2zm0 4h20v2H20v-2z" fill="var(--color-primary)" fill-opacity="0.03" fill-rule="evenodd"/></svg>');
+}
+
+.mihrab-shape {
+    border-bottom-left-radius: 50% 15%;
+    border-bottom-right-radius: 50% 15%;
+}
+
+.arabic-text {
+    line-height: 2.4;
+}
+
+.loader {
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top: 3px solid var(--color-accent);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin { 
+    0% { transform: rotate(0deg); } 
+    100% { transform: rotate(360deg); } 
+}

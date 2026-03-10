@@ -1,0 +1,55 @@
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase'; // فراخوانی احراز هویت
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Admin from './pages/Admin';
+
+function App() {
+  const [currentView, setCurrentView] = useState('home');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [theme, setTheme] = useState('normal');
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  // اعمال تم سایت
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  // بررسی وضعیت ورود کاربر از روی حافظه فایربیس (جلوگیری از خروج با رفرش)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+        if (currentView === 'admin') setCurrentView('home');
+      }
+      setLoadingAuth(false);
+    });
+    return () => unsubscribe();
+  }, [currentView]);
+
+  const renderView = () => {
+    if (loadingAuth) return <div className="p-20 text-center font-bold text-theme-primary">در حال بررسی اطلاعات کاربری...</div>;
+    
+    switch(currentView) {
+      case 'home': return <Home onNavigate={setCurrentView} />;
+      case 'login': return <Login onNavigate={setCurrentView} setIsLoggedIn={setIsLoggedIn} />;
+      case 'admin': return isLoggedIn ? <Admin onNavigate={setCurrentView} setTheme={setTheme} /> : <Login onNavigate={setCurrentView} setIsLoggedIn={setIsLoggedIn} />;
+      default: return <Home onNavigate={setCurrentView} />;
+    }
+  };
+
+  return (
+    <div className="antialiased min-h-screen flex flex-col">
+      <Navbar onNavigate={setCurrentView} />
+      <main className="flex-grow">
+        {renderView()}
+      </main>
+    </div>
+  );
+}
+
+export default App;
