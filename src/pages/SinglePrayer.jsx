@@ -35,11 +35,8 @@ export default function SinglePrayer() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      if (window.scrollY > 10) setIsScrolled(true);
+      else setIsScrolled(false);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -107,15 +104,13 @@ export default function SinglePrayer() {
         :root[data-theme='joyful'] { --diacritic-color: #e11d48; } 
         :root[data-theme='mourning'] { --diacritic-color: #fbbf24; }
         
-        /* پنهان کردن ناوبار اصلی سایت برای تمرکز روی مطالعه */
         nav { display: none !important; }
       `}</style>
 
-      {/* هدر تنظیمات دعا - کاملاً ثابت در بالا */}
+      {/* هدر بالا (ثابت) */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-theme-primary text-white shadow-lg w-full py-2.5">
         <div className="max-w-4xl mx-auto px-3 flex items-center justify-between gap-2">
           
-          {/* بخش راست: بازگشت و نام دعا */}
           <div className="flex items-center gap-2 overflow-hidden">
             <Link to="/prayers" className="bg-white bg-opacity-20 p-2 rounded-full hover:bg-opacity-30 transition flex-shrink-0" title="بازگشت به لیست">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
@@ -123,12 +118,10 @@ export default function SinglePrayer() {
             <h1 className="font-bold text-theme-accent truncate text-sm md:text-xl">{prayer.title}</h1>
           </div>
           
-          {/* بخش چپ: دکمه‌های کنترل */}
           <div className="flex items-center bg-white bg-opacity-10 px-2 py-1.5 md:px-3 md:py-2 rounded-xl flex-shrink-0">
             
-            {/* 1. نمای موبایل (آیکون‌های فشرده) */}
+            {/* نمای موبایل */}
             <div className="flex md:hidden items-center gap-2.5 font-bold">
-              
               <div className="relative flex items-center justify-center w-6 h-6 text-white hover:text-theme-accent transition">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                 <select value={arabicFont} onChange={(e) => setArabicFont(e.target.value)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" dir="rtl">
@@ -146,15 +139,10 @@ export default function SinglePrayer() {
                   <option value="system-ui, sans-serif">فونت سیستم</option>
                 </select>
               </div>
-              
               <div className="w-px h-4 bg-white bg-opacity-30"></div>
-
               <button onClick={() => setShowArabic(!showArabic)} className={`font-arabic text-lg leading-none pt-1 transition-colors ${showArabic ? 'text-theme-accent' : 'text-white opacity-40'}`}>ع</button>
-              
               <button onClick={() => setShowTranslation(!showTranslation)} className={`text-base leading-none transition-colors ${showTranslation ? 'text-theme-accent' : 'text-white opacity-40'}`}>ف</button>
-              
               <div className="w-px h-4 bg-white bg-opacity-30"></div>
-
               <button onClick={toggleFullScreen} className="text-white hover:text-theme-accent transition pl-1">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {isFullscreen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 9V4m0 5h5M15 15v5m0-5h-5" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />}
@@ -162,7 +150,7 @@ export default function SinglePrayer() {
               </button>
             </div>
 
-            {/* 2. نمای دسکتاپ (انتخاب‌های کامل) */}
+            {/* نمای دسکتاپ */}
             <div className="hidden md:flex items-center gap-4 text-xs font-bold">
               <select value={arabicFont} onChange={(e) => setArabicFont(e.target.value)} className="bg-transparent text-white outline-none border-b border-theme-accent border-opacity-50 pb-1 cursor-pointer">
                 <option value="default" className="text-gray-800">عثمان طه</option>
@@ -215,8 +203,8 @@ export default function SinglePrayer() {
         ))}
       </div>
 
-      {/* نوار کنترل اسکرول - ثابت در پایین */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-theme-surface border-t border-theme-primary border-opacity-20 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] flex flex-wrap justify-center items-center gap-4">
+      {/* نوار کنترل اسکرول - 100% تضمینی در پایین صفحه فریز می‌شود */}
+      <div className="fixed bottom-0 left-0 w-full z-[999] bg-theme-surface border-t border-theme-primary border-opacity-20 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.15)] flex flex-wrap justify-center items-center gap-4 transition-all">
         <div className="flex items-center gap-2 bg-theme-bg px-4 py-2 rounded-full border border-theme-primary border-opacity-10 shadow-inner">
           <label className="text-xs font-bold text-theme-textMuted whitespace-nowrap">تنظیم سرعت حرکت:</label>
           <input type="range" min="0.1" max="3" step="0.1" value={scrollSpeed} onChange={(e) => setScrollSpeed(Number(e.target.value))} className="w-24 md:w-40 accent-theme-primary cursor-pointer" dir="ltr" />
@@ -225,6 +213,7 @@ export default function SinglePrayer() {
           {isAutoScrolling ? <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg> توقف حرکت</> : <><svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> حرکت خودکار</>}
         </button>
       </div>
+
     </div>
   );
 }
