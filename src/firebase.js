@@ -1,23 +1,22 @@
-// Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration
+// خواندن امن تنظیمات از متغیرهای محیطی
 const firebaseConfig = {
-  apiKey: "AIzaSyDxCq74bpa_wnPZvWNf9-9CvIEire1-Gyw",
-  authDomain: "mosque-app-8917e.firebaseapp.com",
-  projectId: "mosque-app-8917e",
-  storageBucket: "mosque-app-8917e.firebasestorage.app",
-  messagingSenderId: "987396009502",
-  appId: "1:987396009502:web:c077b577cf6bf84ebd880f"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// فعال‌سازی و خروجی گرفتن از بخش احراز هویت (برای لاگین ادمین)
+// فعال‌سازی و خروجی گرفتن از بخش احراز هویت
 export const auth = getAuth(app);
 
-// فعال‌سازی و خروجی گرفتن از دیتابیس (برای ذخیره دعاها و تنظیمات)
+// فعال‌سازی و خروجی گرفتن از دیتابیس
 export const db = getFirestore(app);
