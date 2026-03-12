@@ -17,9 +17,9 @@ export default function SinglePrayer() {
   const [arabicFont, setArabicFont] = useState('default'); 
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // ابزارهای دسکتاپ و موبایل
-  const [activeTool, setActiveTool] = useState(null); // برای دسکتاپ: 'search' | 'jump' | null
-  const [mobilePopup, setMobilePopup] = useState(null); // برای موبایل: 'search' | 'jump' | null
+  // استیت‌های جستجو و پرش
+  const [activeTool, setActiveTool] = useState(null); 
+  const [mobilePopup, setMobilePopup] = useState(null); 
   
   const [searchQuery, setSearchQuery] = useState('');
   const [jumpNumber, setJumpNumber] = useState('');
@@ -62,18 +62,22 @@ export default function SinglePrayer() {
     return text;
   };
 
+  // ----- تابع هوشمند اسکرول (رفع تداخل با حرکت خودکار) -----
   const scrollToStanza = (index) => {
     if (stanzaRefs.current[index]) {
+      // توقف حرکت خودکار برای جلوگیری از تداخل
+      setIsAutoScrolling(false);
+      accumulatedScroll.current = 0; 
+      
       const y = stanzaRefs.current[index].getBoundingClientRect().top + window.pageYOffset - 140; 
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
 
-  // ----- منطق پرش (با حل باگ اعداد فارسی/عربی) -----
+  // ----- منطق پرش -----
   const handleJump = () => {
     if (!jumpNumber) return;
     
-    // تبدیل تمام ارقام فارسی و عربی به انگلیسی
     const persianDigits = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
     const arabicDigits  = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
     let engNum = jumpNumber;
@@ -92,11 +96,11 @@ export default function SinglePrayer() {
     } else {
       const err = `شماره فراز باید بین ۱ تا ${prayer.content.length} باشد.`;
       setJumpError(err);
-      if (!mobilePopup) alert(err); // برای دسکتاپ
+      if (!mobilePopup) alert(err); 
     }
   };
 
-  // ----- منطق جستجو (با قابلیت حذف اعراب) -----
+  // ----- منطق جستجو -----
   const handleSearch = () => {
     if (!searchQuery.trim()) return;
     const results = [];
@@ -238,9 +242,8 @@ export default function SinglePrayer() {
 
         {/* --- هدر بالا کاملاً فریز شده --- */}
         <div className="fixed top-0 left-0 right-0 z-[9999] bg-theme-primary text-white shadow-lg w-full py-2.5">
-          <div className="max-w-4xl mx-auto px-3 flex items-center justify-between gap-2">
+          <div className="max-w-4xl mx-auto px-3 flex items-center justify-between gap-2 h-10">
             
-            {/* در موبایل اگر جستجو فعال باشد، عنوان مخفی می‌شود تا دکمه‌های قبلی/بعدی جا شوند */}
             <div className={`flex items-center gap-2 overflow-hidden transition-all ${searchResults.length > 0 ? 'hidden md:flex' : 'flex'}`}>
               <Link to="/prayers" className="bg-white bg-opacity-20 p-2 rounded-full hover:bg-opacity-30 transition flex-shrink-0" title="بازگشت به لیست">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
@@ -253,7 +256,6 @@ export default function SinglePrayer() {
               {/* --- نمای موبایل --- */}
               <div className="flex md:hidden items-center gap-2.5 font-bold w-full">
                 {searchResults.length > 0 ? (
-                  // اگر نتایج جستجو وجود داشت، این نوار در موبایل نمایش داده می‌شود
                   <div className="flex items-center justify-between w-full gap-2 animate-fade-in">
                     <button onClick={() => {setSearchResults([]); setSearchQuery('');}} className="text-red-400 bg-white bg-opacity-10 p-1.5 rounded-full shrink-0">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -265,7 +267,6 @@ export default function SinglePrayer() {
                     </div>
                   </div>
                 ) : (
-                  // آیکون‌های پیش‌فرض موبایل
                   <>
                     <button onClick={() => {setMobilePopup('search'); setSearchQuery(''); setSearchError('');}} className="text-white hover:text-theme-accent p-1">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
@@ -306,10 +307,9 @@ export default function SinglePrayer() {
                 )}
               </div>
 
-              {/* --- نمای دسکتاپ (حفظ کدهای قبلی) --- */}
+              {/* --- نمای دسکتاپ --- */}
               <div className="hidden md:flex items-center gap-4 text-xs font-bold">
                 
-                {/* جستجوی دسکتاپ */}
                 {(!activeTool || activeTool === 'search') && (
                   <div className={`flex items-center transition-all duration-300 ${activeTool === 'search' ? 'w-80 bg-white bg-opacity-20 rounded-full px-3 py-1' : 'w-auto'}`}>
                     {activeTool === 'search' ? (
@@ -346,7 +346,6 @@ export default function SinglePrayer() {
 
                 {!activeTool && <div className="w-px h-4 bg-white bg-opacity-30 mx-2"></div>}
 
-                {/* پرش دسکتاپ */}
                 {(!activeTool || activeTool === 'jump') && (
                   <div className={`flex items-center transition-all duration-300 ${activeTool === 'jump' ? 'w-64 bg-white bg-opacity-20 rounded-full px-3 py-1' : 'w-auto'}`}>
                     {activeTool === 'jump' ? (
@@ -370,7 +369,6 @@ export default function SinglePrayer() {
 
                 {!activeTool && <div className="w-px h-4 bg-white bg-opacity-30 mx-2"></div>}
 
-                {/* سایر تنظیمات دسکتاپ (هنگام باز شدن ابزار پنهان می‌شوند) */}
                 <div className={`flex items-center gap-4 ${activeTool ? 'hidden' : ''}`}>
                   <select value={arabicFont} onChange={(e) => setArabicFont(e.target.value)} className="bg-transparent text-white outline-none border-b border-theme-accent border-opacity-50 pb-1 cursor-pointer">
                     <option value="default" className="text-gray-800">عثمان طه (پیش‌فرض)</option>
@@ -394,13 +392,12 @@ export default function SinglePrayer() {
                     </svg>
                   </button>
                 </div>
-
               </div>
             </div>
           </div>
         </div>
 
-        {/* --- نوار کنترل پایین با افزایش سرعت به 30 (بسیار سریع در موبایل) --- */}
+        {/* --- نوار کنترل پایین --- */}
         <div className="fixed bottom-0 left-0 right-0 w-full z-[9999] bg-theme-surface border-t border-theme-primary border-opacity-20 p-2.5 md:p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.15)] flex flex-row flex-nowrap justify-between md:justify-center items-center gap-2 md:gap-4 transition-all">
           <div className="flex flex-1 md:flex-none items-center gap-2 bg-theme-bg px-3 md:px-4 py-2 rounded-full border border-theme-primary border-opacity-10 shadow-inner">
             <label className="hidden md:block text-xs font-bold text-theme-textMuted whitespace-nowrap">تنظیم سرعت:</label>
@@ -442,7 +439,7 @@ export default function SinglePrayer() {
           <div 
             key={idx} 
             ref={(el) => (stanzaRefs.current[idx] = el)} 
-            className={`mb-10 text-center border-b border-opacity-10 border-theme-primary pb-8 last:border-0 transition-all duration-500 ${(activeTool === 'search' || mobilePopup === 'search') && searchResults[currentSearchIndex] === idx ? 'bg-theme-accent bg-opacity-10 ring-1 ring-theme-accent rounded-2xl p-4 scale-[1.02] shadow-sm' : ''}`}
+            className={`mb-10 text-center border-b border-opacity-10 border-theme-primary pb-8 last:border-0 transition-all duration-500 ${(activeTool === 'search' || mobilePopup === 'search' || searchResults.length > 0) && searchResults[currentSearchIndex] === idx ? 'bg-theme-accent bg-opacity-10 ring-1 ring-theme-accent rounded-2xl p-4 scale-[1.02] shadow-sm' : ''}`}
           >
             {showArabic && (
               <p style={arabicFont !== 'default' ? { fontFamily: arabicFont } : {}} className={`arabic-text ${arabicFont === 'default' ? 'font-arabic' : ''} text-2xl md:text-3xl text-theme-text font-bold leading-[3.5rem] md:leading-[5rem] ${showTranslation ? 'mb-6' : ''}`} dir="rtl">
@@ -453,7 +450,7 @@ export default function SinglePrayer() {
           </div>
         ))}
 
-        {/* --- دکمه بازگشت به صفحه اصلی در انتهای دعا --- */}
+        {/* --- دکمه بازگشت به صفحه اصلی --- */}
         <div className="mt-16 mb-8 flex justify-center animate-fade-up">
            <Link to="/" className="bg-theme-primary text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-3">
              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
