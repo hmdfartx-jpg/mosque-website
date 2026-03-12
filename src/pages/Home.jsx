@@ -387,7 +387,7 @@ export default function Home() {
           <div className="mt-5 text-center">
             <p className="text-xs md:text-sm text-theme-text font-bold bg-theme-bg border border-theme-primary border-opacity-20 inline-block px-5 py-2 rounded-xl shadow-sm transition-all duration-300">
               <span className="text-theme-accent ml-1 text-lg leading-none align-middle">★</span>
-              جهت رعایت احتیاط شرعی، لطفاً ۱ تا ۲ دقیقه قبل و بعد از این اوقات مراعات فرمایید.
+              جهت رعایت احتیاط شرعی، لطفاً ۳ تا ۵ دقیقه قبل و بعد از این اوقات مراعات فرمایید.
             </p>
           </div>
         </section>
