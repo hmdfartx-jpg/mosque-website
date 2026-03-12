@@ -26,8 +26,10 @@ export default function Admin({ setTheme }) {
   const [socials, setSocials] = useState({ telegram: '', facebook: '', whatsapp: '' });
   const [aboutText, setAboutText] = useState(''); 
   const [footerAddress, setFooterAddress] = useState('');
+  const [mapLink, setMapLink] = useState(''); // استیت جدید برای لینک گوگل مپ
   const [footerPhone, setFooterPhone] = useState('');
-  const [logoUrl, setLogoUrl] = useState(''); // استیت جدید برای لوگو
+  const [logoUrl, setLogoUrl] = useState(''); 
+  const [showFooterAddress, setShowFooterAddress] = useState(true);
   
   const [loading, setLoading] = useState(false);
   const dragItem = useRef();
@@ -67,8 +69,15 @@ export default function Admin({ setTheme }) {
       onSnapshot(collection(db, "articles"), (snap) => setArticles(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)))),
       onSnapshot(doc(db, "settings", "socials"), (doc) => { if(doc.exists()) setSocials(doc.data()); }),
       onSnapshot(doc(db, "settings", "about"), (doc) => { if(doc.exists()) setAboutText(doc.data().text || ''); }),
-      onSnapshot(doc(db, "settings", "footer"), (doc) => { if(doc.exists()) { setFooterAddress(doc.data().address || ''); setFooterPhone(doc.data().phone || ''); }}),
-      onSnapshot(doc(db, "settings", "logo"), (doc) => { if(doc.exists()) setLogoUrl(doc.data().url || ''); }) // خواندن آدرس لوگو از دیتابیس
+      onSnapshot(doc(db, "settings", "footer"), (doc) => { 
+        if(doc.exists()) { 
+          setFooterAddress(doc.data().address || ''); 
+          setMapLink(doc.data().mapLink || ''); // دریافت لینک نقشه
+          setFooterPhone(doc.data().phone || ''); 
+          setShowFooterAddress(doc.data().showAddress !== false);
+        }
+      }),
+      onSnapshot(doc(db, "settings", "logo"), (doc) => { if(doc.exists()) setLogoUrl(doc.data().url || ''); }) 
     ];
     return () => subs.forEach(unsub => unsub());
   }, [user]);
@@ -183,8 +192,8 @@ export default function Admin({ setTheme }) {
     try {
       await setDoc(doc(db, "settings", "socials"), { telegram: socials.telegram.replace('@', ''), facebook: socials.facebook, whatsapp: socials.whatsapp.replace('+', '') });
       await setDoc(doc(db, "settings", "about"), { text: aboutText });
-      await setDoc(doc(db, "settings", "footer"), { address: footerAddress, phone: footerPhone });
-      await setDoc(doc(db, "settings", "logo"), { url: logoUrl }); // ذخیره آدرس لوگو در دیتابیس
+      await setDoc(doc(db, "settings", "footer"), { address: footerAddress, mapLink: mapLink, phone: footerPhone, showAddress: showFooterAddress }); 
+      await setDoc(doc(db, "settings", "logo"), { url: logoUrl }); 
       alert('تنظیمات با موفقیت ذخیره شد.');
     } catch (error) { alert('خطا در ذخیره‌سازی'); } finally { setLoading(false); }
   };
@@ -278,7 +287,7 @@ export default function Admin({ setTheme }) {
           <button onClick={handleLogout} className="bg-red-600 px-4 py-2 rounded-lg text-sm font-bold">خروج</button>
         </div>
       </header>
-        
+    
       <div className="max-w-6xl mx-auto px-4 mt-8 animate-fade-up">
         <div className="flex overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-200 mb-6 font-bold text-sm">
           <button onClick={() => setAdminTab('prayers')} className={`flex-1 py-4 px-4 whitespace-nowrap border-b-4 transition ${adminTab === 'prayers' ? 'border-blue-600 text-blue-700 bg-blue-50' : 'border-transparent text-gray-500'}`}>ادعیه</button>
@@ -300,8 +309,7 @@ export default function Admin({ setTheme }) {
 
           {adminTab === 'settings' && (
             <div className="space-y-6">
-              
-              {/* بخش آپلود لوگو */}
+             
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200">
                 <h2 className="font-bold text-gray-800 mb-4 border-b pb-3 text-xl">لوگوی رسمی سایت</h2>
                 <p className="text-sm text-gray-500 mb-3">یک عکس با پس‌زمینه شفاف (PNG) را در سایت‌هایی مثل Imgur آپلود کنید و لینک آن را اینجا قرار دهید.</p>
@@ -326,8 +334,17 @@ export default function Admin({ setTheme }) {
                   <input type="text" placeholder="آیدی تلگرام (بدون @)" className="w-full p-3 border rounded-xl" dir="ltr" value={socials.telegram} onChange={e => setSocials({...socials, telegram: e.target.value})} />
                   <input type="text" placeholder="لینک فیسبوک" className="w-full p-3 border rounded-xl" dir="ltr" value={socials.facebook} onChange={e => setSocials({...socials, facebook: e.target.value})} />
                   <input type="tel" placeholder="شماره واتساپ فوتر" className="w-full p-3 border rounded-xl" dir="ltr" value={socials.whatsapp} onChange={e => setSocials({...socials, whatsapp: e.target.value})} />
-                  <h2 className="font-bold text-gray-800 border-b pb-3 text-xl pt-4">تنظیمات فوتر سایت</h2>
-                  <input type="text" placeholder="آدرس مسجد" className="w-full p-3 border rounded-xl" value={footerAddress} onChange={e => setFooterAddress(e.target.value)} />
+                  
+                  <div className="flex justify-between items-center border-b pb-3 pt-4 mb-4">
+                    <h2 className="font-bold text-gray-800 text-xl">تنظیمات فوتر سایت</h2>
+                    <label className="flex items-center gap-2 cursor-pointer bg-gray-50 px-3 py-1.5 rounded-lg border hover:bg-gray-100 transition">
+                      <span className="text-sm font-bold text-gray-700">نمایش آدرس</span>
+                      <input type="checkbox" checked={showFooterAddress} onChange={e => setShowFooterAddress(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
+                    </label>
+                  </div>
+                  
+                  <input type="text" placeholder="آدرس مسجد" className={`w-full p-3 border rounded-xl ${!showFooterAddress ? 'bg-gray-100 opacity-60' : ''}`} value={footerAddress} onChange={e => setFooterAddress(e.target.value)} disabled={!showFooterAddress} />
+                  <input type="text" placeholder="لینک گوگل مپ (موقعیت روی نقشه)" className="w-full p-3 border rounded-xl" dir="ltr" value={mapLink} onChange={e => setMapLink(e.target.value)} />
                   <input type="tel" placeholder="شماره تماس اصلی مسجد" className="w-full p-3 border rounded-xl" dir="ltr" value={footerPhone} onChange={e => setFooterPhone(e.target.value)} />
                 </div>
 

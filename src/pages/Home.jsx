@@ -144,27 +144,27 @@ export default function Home() {
       setSlides(snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=> (a.order||0)-(b.order||0)));
       setLoadingStats(prev => ({ ...prev, slides: true }));
     });
-    
+
     const unsubAnnc = onSnapshot(query(collection(db, 'announcements'), orderBy('date', 'desc'), limit(3)), (snap) => {
       setRecentAnnouncements(snap.docs.map(d => ({id: d.id, ...d.data()})));
       setLoadingStats(prev => ({ ...prev, announcements: true }));
     });
-    
+
     const unsubActs = onSnapshot(query(collection(db, 'activities'), orderBy('date', 'desc'), limit(3)), (snap) => {
       setRecentActivities(snap.docs.map(d => ({id: d.id, ...d.data()})));
       setLoadingStats(prev => ({ ...prev, activities: true }));
     });
-    
+
     const unsubArts = onSnapshot(query(collection(db, 'articles'), orderBy('date', 'desc'), limit(10)), (snap) => {
       setRecentArticles(snap.docs.map(d => ({id: d.id, ...d.data()})));
       setLoadingStats(prev => ({ ...prev, articles: true }));
     });
-    
+
     const unsubSocials = onSnapshot(doc(db, 'settings', 'socials'), (docSnap) => {
       if(docSnap.exists()) setSocials(docSnap.data());
       setLoadingStats(prev => ({ ...prev, socials: true }));
     });
-    
+
     const unsubFooter = onSnapshot(doc(db, 'settings', 'footer'), (docSnap) => {
       if(docSnap.exists()) setFooterSettings(docSnap.data());
       setLoadingStats(prev => ({ ...prev, footer: true }));
@@ -208,11 +208,10 @@ export default function Home() {
   }, []);
 
   const fetchTimingsByAddress = async (address, displayName, initialEvents = null) => {
-    setTimings(null); 
+    setTimings(null);
     try {
       const response = await fetch(`https://api.aladhan.com/v1/timingsByAddress?address=${encodeURIComponent(address)}&method=0`);
       const data = await response.json();
-      
       if (data.code === 200) {
         const t = data.data.timings;
         setTimings({ "اذان صبح": t.Fajr, "طلوع آفتاب": t.Sunrise, "اذان ظهر": t.Dhuhr, "غروب آفتاب": t.Sunset, "اذان مغرب": t.Maghrib, "نیمه‌شب شرعی": t.Midnight });
@@ -222,18 +221,17 @@ export default function Home() {
         let adjustedDay = parseInt(hijri.day, 10) - 1;
         if (adjustedDay <= 0) adjustedDay = 29; 
         const qKey = `${parseInt(hijri.month.number, 10)}-${adjustedDay}`;
-        
         setDates(prev => ({ ...prev, qamari: `${toPersianNum(adjustedDay)} ${hijri.month.ar} ${toPersianNum(hijri.year)}` }));
 
         let allEvents = initialEvents ? [...initialEvents] : [];
         if (qamariEvents[qKey]) allEvents.push(qamariEvents[qKey]);
         setOccasion(allEvents.length > 0 ? allEvents.join('\n • ') : "بدون مناسبت خاص");
-        setIsCitySearchOpen(false); 
+        setIsCitySearchOpen(false);
       } else {
         alert('متأسفانه شهر مورد نظر یافت نشد.');
       }
     } catch (error) { 
-      console.log(error); 
+      console.log(error);
     } finally {
       setLoadingStats(prev => ({ ...prev, timings: true }));
     }
@@ -257,6 +255,7 @@ export default function Home() {
       for (const [name, timeStr] of Object.entries(timings)) {
         const [h, m] = timeStr.split(':').map(Number);
         const prayerTotalMinutes = h * 60 + m;
+      
         if (prayerTotalMinutes > currentTotalMinutes && prayerTotalMinutes < nextPrayerMinutes) {
           nextPrayerMinutes = prayerTotalMinutes; nextPrayerName = name;
         }
@@ -266,6 +265,7 @@ export default function Home() {
         const [h, m] = timings["اذان صبح"].split(':').map(Number);
         nextPrayerMinutes = (24 * 60) + (h * 60 + m);
       }
+  
       const diff = nextPrayerMinutes - currentTotalMinutes;
       const hours = Math.floor(diff / 60); const minutes = diff % 60;
       let timeText = hours > 0 ? `${toPersianNum(hours)} ساعت و ` : "";
@@ -285,7 +285,6 @@ export default function Home() {
           <div className="absolute inset-0 border-4 border-theme-primary border-opacity-20 rounded-full"></div>
           <div className="absolute inset-0 border-4 border-transparent border-t-theme-accent rounded-full animate-spin"></div>
           <div className="absolute inset-0 flex items-center justify-center p-5 text-theme-primary">
-             {/* استفاده از SVG اختصاصی کاربر در لودینگ */}
              <MosqueLogo />
           </div>
         </div>
@@ -303,18 +302,21 @@ export default function Home() {
           <div key={slide.id} className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
             <img src={slide.imageUrl || 'https://via.placeholder.com/800x400?text=Mosque'} alt={slide.title} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-black bg-opacity-50 transition-all duration-300"></div>
+ 
             <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-6 pt-24 z-10 text-white drop-shadow-xl">
               <h1 className="text-3xl md:text-5xl font-bold mb-4 text-theme-accent">{slide.title}</h1>
               <p className="text-sm md:text-xl max-w-2xl leading-relaxed">{slide.subtitle}</p>
             </div>
           </div>
         )) : (
+        
           <div className="absolute inset-0 flex flex-col justify-center items-center text-center p-6 pt-24 text-white bg-theme-primary mihrab-shape">
              <h1 className="text-3xl md:text-5xl font-bold mb-4 text-theme-accent drop-shadow-lg">مسجد جامع حضرت خدیجه کبری (س)</h1>
              <p className="text-sm md:text-lg drop-shadow">پایگاه اطلاع‌رسانی و فعالیت‌های فرهنگی مذهبی</p>
           </div>
         )}
         <div className="absolute bottom-6 w-full flex justify-center gap-2 z-20">
+        
           {slides.map((_, i) => <div key={i} className={`h-2 rounded-full transition-all duration-500 shadow-sm ${i === currentSlide ? 'w-6 bg-theme-accent' : 'w-2 bg-white bg-opacity-50'}`}></div>)}
         </div>
       </header>
@@ -323,6 +325,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm font-bold">
           <p className="font-arabic bg-black bg-opacity-30 px-5 py-2 rounded-full text-white transition-colors duration-300 shadow-sm">
             ذکر روز: {zikr} <span className="font-sans text-xs mr-1 opacity-90">(۱۰۰ مرتبه)</span>
+         
           </p>
           <div className="flex flex-wrap justify-center gap-3 md:gap-6 text-sm items-center">
             <span>{dates.shamsi}</span>
@@ -331,6 +334,7 @@ export default function Home() {
             <span className="hidden md:inline opacity-40">|</span>
             <span dir="ltr">{dates.gregorian}</span>
           </div>
+     
         </div>
       </div>
 
@@ -339,10 +343,12 @@ export default function Home() {
         <section className="bg-theme-surface rounded-2xl shadow-md p-5 mb-8 border border-opacity-20 border-theme-primary relative overflow-visible animate-fade-up">
           {isCitySearchOpen && (
             <div className="absolute inset-0 bg-theme-surface z-30 flex flex-col items-center justify-center p-4 backdrop-blur-md bg-opacity-95 animate-fade-in rounded-2xl shadow-xl">
+              
               <h3 className="font-bold mb-4 text-theme-text text-lg">جستجوی اوقات شرعی شهرهای جهان</h3>
               <div className="relative w-full max-w-md flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
                   <input type="text" placeholder="نام شهر (مثلاً: کابل، London)" value={citySearchQuery} onChange={(e) => handleCitySearch(e.target.value)} className="w-full p-3 rounded-xl border border-theme-primary text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-theme-primary transition-all duration-300" />
+            
                   {filteredCities.length > 0 && (
                     <ul className="absolute top-full right-0 w-full bg-white border border-gray-200 rounded-xl mt-2 max-h-48 overflow-y-auto z-40 shadow-xl text-gray-800 text-sm animate-fade-in">
                       {filteredCities.map((city, index) => (
@@ -350,6 +356,7 @@ export default function Home() {
                           {city}
                         </li>
                       ))}
+             
                     </ul>
                   )}
                 </div>
@@ -367,10 +374,12 @@ export default function Home() {
               اوقات شرعی ({displayLocation})
             </h2>
             <div className="text-sm font-bold text-theme-text border border-theme-primary border-opacity-20 bg-theme-bg px-6 py-2 rounded-xl shadow-sm text-center flex-1 max-w-xs transition-all duration-300 hover:shadow-md">
-              {countdown}
+   
+               {countdown}
             </div>
             <button onClick={() => setIsCitySearchOpen(true)} className="flex items-center gap-1.5 text-xs md:text-sm bg-theme-primary text-white hover:bg-opacity-90 px-5 py-2.5 rounded-full shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 font-bold whitespace-nowrap">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+      
               تغییر شهر
             </button>
           </div>
@@ -394,6 +403,7 @@ export default function Home() {
 
         <section className="bg-theme-surface rounded-2xl shadow-md p-5 mb-8 border-r-4 border-theme-accent flex items-start gap-4 transition-all duration-300 hover:shadow-lg animate-fade-up">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-theme-accent flex-shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          
           <div className="w-full">
             <span className="text-xs text-theme-textMuted block mb-2 font-bold">مناسبت‌های امروز:</span>
             <span className="font-bold text-theme-text text-sm md:text-base leading-loose whitespace-pre-line block">
@@ -420,11 +430,13 @@ export default function Home() {
                     <>
                       <p className="text-theme-text text-base md:text-lg leading-loose mb-6 font-bold">{dailyData.hokm.text}</p>
                       <div className="inline-flex justify-center items-center gap-2 text-xs md:text-sm text-theme-accent bg-theme-primary bg-opacity-5 px-4 py-2 rounded-xl font-bold">
+                 
                         <span>{dailyData.hokm.author}</span>
                         <span>-</span>
                         <span>{dailyData.hokm.ref}</span>
                       </div>
                     </>
+   
                   ) : (
                     <>
                       <p className="font-arabic text-2xl md:text-3xl mb-5 text-theme-text font-bold leading-loose">{activeTab === 'ayah' ? dailyData.ayah.ar : dailyData.hadith.ar}</p>
@@ -433,40 +445,48 @@ export default function Home() {
                     </>
                   )}
                 </div>
+        
               </div>
             </section>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary flex flex-col h-full hover:shadow-md transition-shadow duration-300 animate-fade-up delay-300">
                 <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
+             
                   <h2 className="font-bold text-lg text-theme-text">اطلاعیه‌ها</h2>
                   <Link to="/announcements" className="text-xs text-white font-bold hover:bg-opacity-80 bg-theme-primary px-4 py-1.5 rounded-full shadow-sm transition-all">همه</Link>
                 </div>
                 <div className="space-y-4 flex-1">
                   {recentAnnouncements.map(item => (
+         
                     <Link to={`/announcements/${item.id}`} key={item.id} className="flex bg-theme-bg rounded-xl border-r-4 border-theme-accent hover:-translate-y-1 hover:shadow-sm transition-all duration-300 overflow-hidden group">
                       {item.imageUrl && <img src={item.imageUrl} alt="" className="w-20 sm:w-24 object-cover flex-shrink-0" />}
                       <div className="p-3 flex-1 flex flex-col justify-center">
+                  
                         <h3 className="font-bold text-sm text-theme-text mb-1 line-clamp-1">{item.title}</h3>
                         <p className="text-[11px] text-theme-textMuted line-clamp-2 leading-relaxed">{item.summary}</p>
                       </div>
                     </Link>
                   ))}
+ 
                 </div>
               </section>
 
               <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary flex flex-col h-full hover:shadow-md transition-shadow duration-300 animate-fade-up delay-300">
                 <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
+                  
                   <h2 className="font-bold text-lg text-theme-text">برنامه‌ها</h2>
                   <Link to="/activities" className="text-xs text-white font-bold hover:bg-opacity-80 bg-theme-primary px-4 py-1.5 rounded-full shadow-sm transition-all">همه</Link>
                 </div>
                 <div className="space-y-4 flex-1">
                   {recentActivities.map(item => (
+              
                     <Link to={`/activities/${item.id}`} key={item.id} className="flex bg-theme-bg rounded-xl border border-theme-primary border-opacity-10 hover:-translate-y-1 hover:shadow-sm transition-all duration-300 overflow-hidden group">
                       {(item.imageUrl || (item.images && item.images.length > 0)) && <img src={item.images && item.images.length > 0 ? item.images[0] : item.imageUrl} alt="" className="w-20 sm:w-24 object-cover flex-shrink-0" />}
                       <div className="p-3 flex-1 flex flex-col justify-center">
                         <h3 className="font-bold text-sm text-theme-text mb-1 line-clamp-1">{item.title}</h3>
                         <p className="text-[11px] text-theme-textMuted">{item.date}</p>
+          
                       </div>
                     </Link>
                   ))}
@@ -474,16 +494,19 @@ export default function Home() {
               </section>
             </div>
 
+        
             <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary w-full hover:shadow-md transition-shadow duration-300 animate-fade-up delay-400">
               <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
                 <h2 className="font-bold text-lg text-theme-text">آخرین مقالات معارفی</h2>
                 <Link to="/articles" className="text-xs text-white font-bold hover:bg-opacity-80 bg-theme-primary px-4 py-1.5 rounded-full shadow-sm transition-all">مشاهده همه</Link>
+            
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {recentArticles.length > 0 ? recentArticles.map(article => (
                   <Link to={`/articles/${article.id}`} key={article.id} className="bg-theme-bg rounded-2xl p-5 hover:-translate-y-1 hover:shadow-md transition-all duration-300 group border border-theme-primary border-opacity-10 flex flex-col justify-center">
                     <h3 className="font-bold text-sm md:text-base text-theme-text mb-2 group-hover:text-theme-accent transition-colors line-clamp-2">{article.title}</h3>
                     <p className="text-xs text-theme-textMuted line-clamp-3 leading-relaxed mt-auto">{article.summary}</p>
+           
                   </Link>
                 )) : <p className="text-sm text-theme-textMuted text-center py-4 col-span-full">مقاله‌ای یافت نشد.</p>}
               </div>
@@ -493,21 +516,25 @@ export default function Home() {
 
           <div className="space-y-8 animate-fade-up delay-400">
             
-            <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary hover:shadow-md transition-shadow duration-300">
+       
+             <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary hover:shadow-md transition-shadow duration-300">
                <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
                 <h2 className="font-bold text-lg text-theme-text">ادعیه منتخب</h2>
                 <Link to="/prayers" className="text-xs text-white font-bold hover:bg-opacity-80 bg-theme-primary px-4 py-1.5 rounded-full shadow-sm transition-all">کتابخانه</Link>
               </div>
+ 
               <div className="flex flex-col gap-3">
                 {prayers.map(prayer => (
                   <Link key={prayer.id} to={`/prayers/${prayer.id}`} className="bg-theme-bg p-4 rounded-xl text-sm md:text-base font-bold text-theme-text hover:bg-theme-primary hover:bg-opacity-10 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 border border-transparent hover:border-theme-primary hover:border-opacity-20 flex justify-between items-center group">
                     {prayer.title}
+     
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-theme-textMuted group-hover:text-theme-accent transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                   </Link>
                 ))}
               </div>
             </section>
 
+      
             <div className="flex flex-col gap-4">
               {socials.telegram && (
                 <a href={`https://t.me/${socials.telegram}`} target="_blank" rel="noreferrer" className="w-full bg-blue-500 text-white py-4 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all text-center font-bold flex items-center justify-center gap-3">
@@ -519,6 +546,7 @@ export default function Home() {
                 <a href={socials.facebook.includes('http') ? socials.facebook : `https://facebook.com/${socials.facebook}`} target="_blank" rel="noreferrer" className="w-full bg-blue-800 text-white py-4 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all text-center font-bold flex items-center justify-center gap-3">
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H7v-3h3V9.5c0-2.97 1.77-4.6 4.46-4.6 1.3 0 2.67.23 2.67.23v2.94h-1.5c-1.48 0-1.94.92-1.94 1.86V12h3.33l-.53 3h-2.8v6.8c4.56-.93 8-4.96 8-9.8z"/></svg>
                   صفحه رسمی فیسبوک
+               
                 </a>
               )}
             </div>
@@ -526,37 +554,45 @@ export default function Home() {
             {departments.length > 0 && (
               <section className="bg-theme-surface rounded-3xl shadow-sm p-6 border border-opacity-10 border-theme-primary hover:shadow-md transition-shadow duration-300">
                 <div className="flex justify-between items-center border-b border-theme-primary border-opacity-10 pb-4 mb-5">
+         
                   <h2 className="font-bold text-lg text-theme-text">تماس با مسجد</h2>
                   <Link to="/about" className="text-xs text-white font-bold hover:bg-opacity-80 bg-theme-primary px-4 py-1.5 rounded-full shadow-sm transition-all">جزئیات</Link>
                 </div>
                 <div className="space-y-4">
                   {departments.map(dept => (
-                    <div key={dept.id} className="border border-theme-primary border-opacity-10 rounded-2xl overflow-hidden bg-theme-bg transition-all duration-300">
+    
+                 <div key={dept.id} className="border border-theme-primary border-opacity-10 rounded-2xl overflow-hidden bg-theme-bg transition-all duration-300">
                       <button onClick={() => setOpenDeptId(openDeptId === dept.id ? null : dept.id)} className="w-full flex justify-between items-center p-4 md:p-5 bg-theme-surface hover:bg-theme-primary hover:bg-opacity-5 transition-colors">
                         <span className="font-bold text-theme-text text-sm md:text-base">{dept.name}</span>
                         <svg className={`h-5 w-5 text-theme-accent transition-transform duration-300 ${openDeptId === dept.id ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                       </button>
                       
                       {openDeptId === dept.id && (
-                        <div className="p-4 bg-transparent border-t border-theme-primary border-opacity-10 animate-fade-in">
+              
+                  <div className="p-4 bg-transparent border-t border-theme-primary border-opacity-10 animate-fade-in">
                           <div className="flex flex-wrap justify-center gap-2.5">
                             {dept.phones.map((phone, i) => (
-                              <a key={i} href={`tel:${phone}`} title="تماس مستقیم" className="flex items-center gap-2 bg-theme-primary text-white p-3 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-300" dir="ltr">
+                       
+                               <a key={i} href={`tel:${phone}`} title="تماس مستقیم" className="flex items-center gap-2 bg-theme-primary text-white p-3 rounded-xl hover:-translate-y-0.5 hover:shadow-md transition-all duration-300" dir="ltr">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                               </a>
                             ))}
                             {dept.whatsapp && (
-                              <a href={`https://wa.me/${dept.whatsapp}`} title="واتساپ" className="flex items-center gap-2 bg-green-600 text-white p-3 rounded-xl hover:-translate-y-0.5 hover:shadow-md hover:bg-green-700 transition-all duration-300 font-bold">
+           
+                               <a href={`https://wa.me/${dept.whatsapp}`} title="واتساپ" className="flex items-center gap-2 bg-green-600 text-white p-3 rounded-xl hover:-translate-y-0.5 hover:shadow-md hover:bg-green-700 transition-all duration-300 font-bold">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.393 0 0 5.392 0 12.031c0 2.115.55 4.183 1.597 6L.065 24l6.103-1.603a12.002 12.002 0 0 0 5.863 1.523h.005c6.637 0 12.03-5.394 12.03-12.031S18.669 0 12.031 0zm... "/><path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .015 5.448.015 12.032c0 2.112.553 4.175 1.605 5.99L0 24l6.147-1.614c1.761.956 3.751 1.46 5.898 1.46h.004c6.58 0 12.028-5.446 12.028-12.028 0-3.189-1.24-6.177-3.557-8.369zm-8.475 18.397h-.003c-1.786 0-3.527-.48-5.056-1.385l-.362-.214-3.754.986.998-3.66-.235-.373a10.057 10.057 0 0 1-1.536-5.418c0-5.552 4.516-10.069 10.075-10.069 2.692 0 5.217 1.047 7.118 2.949 1.901 1.902 2.949 4.428 2.949 7.12 0 5.551-4.516 10.064-10.074 10.064zm5.526-7.551c-.304-.152-1.796-.885-2.073-.986-.277-.101-.48-.152-.682.152-.202.304-.784.986-.96 1.188-.178.203-.356.228-.66.076-.303-.152-1.282-.472-2.441-1.521-.903-.817-1.512-1.826-1.69-2.13-.177-.303-.019-.467.133-.619.136-.137.304-.355.456-.532.152-.178.203-.304.304-.507.101-.203.05-.381-.026-.532-.076-.153-.682-1.645-.934-2.253-.246-.593-.496-.513-.682-.521-.177-.008-.381-.01-.583-.01-.203 0-.532.076-.811.381-.278.304-1.064 1.04-1.064 2.541 0 1.501 1.089 2.952 1.242 3.155.152.203 2.15 3.284 5.207 4.606 2.052.89 2.723.957 3.65.803.926-.154 2.996-1.22 3.42-2.404.423-1.183.423-2.195.297-2.404-.127-.208-.48-.31-.784-.462z"/></svg>
                               </a>
-                            )}
+   
+                           )}
                             {dept.telegram && (
                               <a href={`tg://resolve?domain=${dept.telegram}`} title="تلگرام" className="flex items-center gap-2 bg-blue-600 text-white p-3 rounded-xl hover:-translate-y-0.5 hover:shadow-md hover:bg-blue-700 transition-all duration-300 font-bold">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.13 7.19c-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5l.22-1.59c.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.08-.19-.09-.05-.21-.02-.3.01l-6.1 4.04c-.58.4-1.1.59-1.56.58-.5-.01-1.46-.28-2.18-.52-.88-.29-1.58-.45-1.52-.96.03-.25.38-.51 1.05-.78 4.11-1.79 6.86-2.98 8.24-3.56 3.92-1.64 4.74-1.92 5.27-1.93.12 0 .38.03.52.14z"/></svg>
+                             
                               </a>
                             )}
                           </div>
                         </div>
+                     
                       )}
                     </div>
                   ))}
@@ -565,10 +601,11 @@ export default function Home() {
             )}
           </div>
         </div>
+ 
       </div>
 
       <footer className="bg-theme-primary text-white relative overflow-hidden mt-8 pt-12">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 pb-12">
+        <div className={`max-w-6xl mx-auto px-6 grid grid-cols-1 ${footerSettings.showAddress !== false ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-12 pb-12`}>
           <div>
             <div className="flex items-center gap-3 mb-5">
               {/* استفاده از SVG کاربر در فوتر (سفید شده) */}
@@ -578,39 +615,68 @@ export default function Home() {
                  <div className="w-12 h-12 text-white opacity-80"><MosqueLogo /></div>
               )}
               <h3 className="font-bold text-2xl text-theme-accent">درباره مسجد</h3>
+   
             </div>
             <p className="text-sm leading-loose opacity-90 text-justify">
               مسجد جامع حضرت خدیجه کبرا (س) پایگاهی برای ترویج معارف ناب اسلامی و مکتب اهل‌بیت (ع) می‌باشد که همواره در خدمت مؤمنین خداجو است.
             </p>
           </div>
-          <div>
-            <h3 className="font-bold text-2xl mb-5 text-theme-accent">آدرس</h3>
-            <p className="text-sm opacity-90 leading-relaxed">{footerSettings.address || "آدرس در تنظیمات پنل ثبت نشده است"}</p>
-          </div>
-          <div className="flex flex-col md:items-start items-center">
-            <h3 className="font-bold text-2xl mb-6 text-theme-accent">ارتباط سریع</h3>
-            <div className="flex gap-5">
-              {footerSettings.phone && (
-                <a href={`tel:${footerSettings.phone}`} title="تماس تلفنی" className="bg-white bg-opacity-10 p-3 rounded-full hover:bg-theme-accent hover:text-theme-primary transition-all duration-300 shadow-md">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                </a>
-              )}
-              {socials.whatsapp && (
-                <a href={`https://wa.me/${socials.whatsapp}`} target="_blank" rel="noreferrer" title="واتساپ" className="bg-white bg-opacity-10 p-3 rounded-full hover:bg-green-500 transition-all duration-300 shadow-md">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.393 0 0 5.392 0 12.031c0 2.115.55 4.183 1.597 6L.065 24l6.103-1.603a12.002 12.002 0 0 0 5.863 1.523h.005c6.637 0 12.03-5.394 12.03-12.031S18.669 0 12.031 0zm... "/><path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .015 5.448.015 12.032c0 2.112.553 4.175 1.605 5.99L0 24l6.147-1.614c1.761.956 3.751 1.46 5.898 1.46h.004c6.58 0 12.028-5.446 12.028-12.028 0-3.189-1.24-6.177-3.557-8.369zm-8.475 18.397h-.003c-1.786 0-3.527-.48-5.056-1.385l-.362-.214-3.754.986.998-3.66-.235-.373a10.057 10.057 0 0 1-1.536-5.418c0-5.552 4.516-10.069 10.075-10.069 2.692 0 5.217 1.047 7.118 2.949 1.901 1.902 2.949 4.428 2.949 7.12 0 5.551-4.516 10.064-10.074 10.064zm5.526-7.551c-.304-.152-1.796-.885-2.073-.986-.277-.101-.48-.152-.682.152-.202.304-.784.986-.96 1.188-.178.203-.356.228-.66.076-.303-.152-1.282-.472-2.441-1.521-.903-.817-1.512-1.826-1.69-2.13-.177-.303-.019-.467.133-.619.136-.137.304-.355.456-.532.152-.178.203-.304.304-.507.101-.203.05-.381-.026-.532-.076-.153-.682-1.645-.934-2.253-.246-.593-.496-.513-.682-.521-.177-.008-.381-.01-.583-.01-.203 0-.532.076-.811.381-.278.304-1.064 1.04-1.064 2.541 0 1.501 1.089 2.952 1.242 3.155.152.203 2.15 3.284 5.207 4.606 2.052.89 2.723.957 3.65.803.926-.154 2.996-1.22 3.42-2.404.423-1.183.423-2.195.297-2.404-.127-.208-.48-.31-.784-.462z"/></svg>
-                </a>
-              )}
-              {socials.telegram && (
-                <a href={`https://t.me/${socials.telegram}`} target="_blank" rel="noreferrer" title="تلگرام" className="bg-white bg-opacity-10 p-3 rounded-full hover:bg-blue-500 transition-all duration-300 shadow-md">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.13 7.19c-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5l.22-1.59c.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.08-.19-.09-.05-.21-.02-.3.01l-6.1 4.04c-.58.4-1.1.59-1.56.58-.5-.01-1.46-.28-2.18-.52-.88-.29-1.58-.45-1.52-.96.03-.25.38-.51 1.05-.78 4.11-1.79 6.86-2.98 8.24-3.56 3.92-1.64 4.74-1.92 5.27-1.93.12 0 .38.03.52.14z"/></svg>
-                </a>
-              )}
-              {socials.facebook && (
-                <a href={socials.facebook.includes('http') ? socials.facebook : `https://facebook.com/${socials.facebook}`} target="_blank" rel="noreferrer" title="فیسبوک" className="bg-white bg-opacity-10 p-3 rounded-full hover:bg-blue-800 transition-all duration-300 shadow-md">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H7v-3h3V9.5c0-2.97 1.77-4.6 4.46-4.6 1.3 0 2.67.23 2.67.23v2.94h-1.5c-1.48 0-1.94.92-1.94 1.86V12h3.33l-.53 3h-2.8v6.8c4.56-.93 8-4.96 8-9.8z"/></svg>
+          
+          {/* ستون آدرس: در صورت فعال بودن نمایش داده می‌شود */}
+          {footerSettings.showAddress !== false && (
+            <div>
+              <h3 className="font-bold text-2xl mb-5 text-theme-accent">آدرس</h3>
+              <p className="text-sm opacity-90 leading-relaxed">{footerSettings.address || "آدرس در تنظیمات پنل ثبت نشده است"}</p>
+              
+              {/* دکمه نقشه اگر آدرس فعال باشد */}
+              {footerSettings.mapLink && (
+                <a href={footerSettings.mapLink} target="_blank" rel="noreferrer" className="mt-5 inline-flex items-center justify-center gap-2 bg-white bg-opacity-10 hover:bg-theme-accent hover:text-theme-primary border border-white border-opacity-20 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm transition-all duration-300 text-sm w-fit">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  موقعیت روی نقشه
                 </a>
               )}
             </div>
+          )}
+          
+          <div className="flex flex-col md:items-start items-center">
+            <h3 className="font-bold text-2xl mb-6 text-theme-accent">ارتباط سریع</h3>
+            
+            {/* کانتینری برای هم‌عرض شدن دکمه نقشه با آیکون‌ها */}
+            <div className="flex flex-col gap-4 w-fit">
+              <div className="flex gap-5 justify-center md:justify-start">
+                {footerSettings.phone && (
+                  <a href={`tel:${footerSettings.phone}`} title="تماس تلفنی" className="bg-white bg-opacity-10 p-3 rounded-full hover:bg-theme-accent hover:text-theme-primary transition-all duration-300 shadow-md">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                  </a>
+                )}
+    
+                {socials.whatsapp && (
+                  <a href={`https://wa.me/${socials.whatsapp}`} target="_blank" rel="noreferrer" title="واتساپ" className="bg-white bg-opacity-10 p-3 rounded-full hover:bg-green-500 transition-all duration-300 shadow-md">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 0C5.393 0 0 5.392 0 12.031c0 2.115.55 4.183 1.597 6L.065 24l6.103-1.603a12.002 12.002 0 0 0 5.863 1.523h.005c6.637 0 12.03-5.394 12.03-12.031S18.669 0 12.031 0zm... "/><path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .015 5.448.015 12.032c0 2.112.553 4.175 1.605 5.99L0 24l6.147-1.614c1.761.956 3.751 1.46 5.898 1.46h.004c6.58 0 12.028-5.446 12.028-12.028 0-3.189-1.24-6.177-3.557-8.369zm-8.475 18.397h-.003c-1.786 0-3.527-.48-5.056-1.385l-.362-.214-3.754.986.998-3.66-.235-.373a10.057 10.057 0 0 1-1.536-5.418c0-5.552 4.516-10.069 10.075-10.069 2.692 0 5.217 1.047 7.118 2.949 1.901 1.902 2.949 4.428 2.949 7.12 0 5.551-4.516 10.064-10.074 10.064zm5.526-7.551c-.304-.152-1.796-.885-2.073-.986-.277-.101-.48-.152-.682.152-.202.304-.784.986-.96 1.188-.178.203-.356.228-.66.076-.303-.152-1.282-.472-2.441-1.521-.903-.817-1.512-1.826-1.69-2.13-.177-.303-.019-.467.133-.619.136-.137.304-.355.456-.532.152-.178.203-.304.304-.507.101-.203.05-.381-.026-.532-.076-.153-.682-1.645-.934-2.253-.246-.593-.496-.513-.682-.521-.177-.008-.381-.01-.583-.01-.203 0-.532.076-.811.381-.278.304-1.064 1.04-1.064 2.541 0 1.501 1.089 2.952 1.242 3.155.152.203 2.15 3.284 5.207 4.606 2.052.89 2.723.957 3.65.803.926-.154 2.996-1.22 3.42-2.404.423-1.183.423-2.195.297-2.404-.127-.208-.48-.31-.784-.462z"/></svg>
+                  </a>
+                )}
+            
+                {socials.telegram && (
+                  <a href={`https://t.me/${socials.telegram}`} target="_blank" rel="noreferrer" title="تلگرام" className="bg-white bg-opacity-10 p-3 rounded-full hover:bg-blue-500 transition-all duration-300 shadow-md">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8l-1.13 7.19c-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5l.22-1.59c.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.08-.19-.09-.05-.21-.02-.3.01l-6.1 4.04c-.58.4-1.1.59-1.56.58-.5-.01-1.46-.28-2.18-.52-.88-.29-1.58-.45-1.52-.96.03-.25.38-.51 1.05-.78 4.11-1.79 6.86-2.98 8.24-3.56 3.92-1.64 4.74-1.92 5.27-1.93.12 0 .38.03.52.14z"/></svg>
+            
+                  </a>
+                )}
+                {socials.facebook && (
+                  <a href={socials.facebook.includes('http') ? socials.facebook : `https://facebook.com/${socials.facebook}`} target="_blank" rel="noreferrer" title="فیسبوک" className="bg-white bg-opacity-10 p-3 rounded-full hover:bg-blue-800 transition-all duration-300 shadow-md">
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H7v-3h3V9.5c0-2.97 1.77-4.6 4.46-4.6 1.3 0 2.67.23 2.67.23v2.94h-1.5c-1.48 0-1.94.92-1.94 1.86V12h3.33l-.53 3h-2.8v6.8c4.56-.93 8-4.96 8-9.8z"/></svg>
+                  </a>
+                )}
+              </div>
+              
+              {/* دکمه نقشه اگر آدرس غیرفعال باشد (هم‌عرض با آیکون‌ها) */}
+              {footerSettings.showAddress === false && footerSettings.mapLink && (
+                <a href={footerSettings.mapLink} target="_blank" rel="noreferrer" className="w-full flex items-center justify-center gap-2 bg-white bg-opacity-10 hover:bg-theme-accent hover:text-theme-primary border border-white border-opacity-20 text-white px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all duration-300 text-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  موقعیت روی نقشه
+                </a>
+              )}
+             </div>
           </div>
         </div>
 
