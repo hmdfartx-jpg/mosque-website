@@ -17,8 +17,8 @@ export default function SinglePrayer() {
   const [arabicFont, setArabicFont] = useState('default'); 
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // استیت‌های جدید برای ابزارهای جستجو و پرش
-  const [activeTool, setActiveTool] = useState(null); // 'search' | 'jump' | null
+  // استیت‌های جستجو و پرش
+  const [activeTool, setActiveTool] = useState(null); 
   const [searchQuery, setSearchQuery] = useState('');
   const [jumpNumber, setJumpNumber] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -26,7 +26,7 @@ export default function SinglePrayer() {
 
   const wakeLockRef = useRef(null);
   const accumulatedScroll = useRef(0);
-  const stanzaRefs = useRef([]); // رفرنس برای اسکرول به فرازها
+  const stanzaRefs = useRef([]); 
 
   useEffect(() => {
     setMounted(true);
@@ -57,20 +57,30 @@ export default function SinglePrayer() {
     return text;
   };
 
-  // ----- توابع ابزارهای جدید -----
+  // ----- توابع ابزارها -----
   const scrollToStanza = (index) => {
     if (stanzaRefs.current[index]) {
-      const y = stanzaRefs.current[index].getBoundingClientRect().top + window.pageYOffset - 140; // فاصله از هدر ثابت
+      const y = stanzaRefs.current[index].getBoundingClientRect().top + window.pageYOffset - 140; 
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
   };
 
   const handleJump = () => {
-    // تبدیل اعداد فارسی به انگلیسی برای پردازش
-    const toEngDigit = (str) => str.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
-    const num = parseInt(toEngDigit(jumpNumber), 10);
+    if (!jumpNumber) return;
+    
+    // رفع قطعی باگ تبدیل اعداد و جهت در موبایل
+    const persianDigits = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+    const arabicDigits  = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+    let engNum = jumpNumber;
+    for (let i = 0; i < 10; i++) {
+      engNum = engNum.replace(persianDigits[i], i).replace(arabicDigits[i], i);
+    }
+    
+    const num = parseInt(engNum, 10);
     if (num > 0 && num <= prayer.content.length) {
       scrollToStanza(num - 1);
+      setActiveTool(null); // بستن ابزار بعد از پرش موفق
+      setJumpNumber('');
     } else {
       alert(`شماره فراز باید بین ۱ تا ${prayer.content.length} باشد.`);
     }
@@ -79,7 +89,6 @@ export default function SinglePrayer() {
   const handleSearch = () => {
     if (!searchQuery.trim()) return;
     const results = [];
-    // تابع حذف اعراب عربی برای جستجوی دقیق‌تر
     const removeDiacritics = (str) => str ? str.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '') : '';
     const searchVal = removeDiacritics(searchQuery);
 
@@ -117,14 +126,12 @@ export default function SinglePrayer() {
   };
 
   const onSearchChange = (e) => {
-    // فقط حروف فارسی، عربی و فاصله‌ها مجاز است
     const val = e.target.value.replace(/[^آ-یأ-ي\s\u200C]/g, '');
     setSearchQuery(val);
   };
 
   const onJumpChange = (e) => {
-    // فقط اعداد انگلیسی و فارسی مجاز است
-    const val = e.target.value.replace(/[^0-9۰-۹]/g, '');
+    const val = e.target.value.replace(/[^0-9۰-۹٠-٩]/g, '');
     setJumpNumber(val);
   };
   // --------------------------------
@@ -168,45 +175,50 @@ export default function SinglePrayer() {
       <div className="font-sans" dir="rtl">
         {/* هدر بالا کاملاً فریز شده */}
         <div className="fixed top-0 left-0 right-0 z-[9999] bg-theme-primary text-white shadow-lg w-full py-2.5">
-          <div className="max-w-4xl mx-auto px-3 flex items-center justify-between gap-2">
+          <div className="max-w-4xl mx-auto px-3 flex items-center justify-between gap-2 h-10">
             
-            {/* در موبایل اگر ابزاری فعال شود، عنوان پنهان می‌شود تا فضا باز شود */}
-            <div className={`flex items-center gap-2 overflow-hidden ${activeTool ? 'hidden md:flex' : 'flex'}`}>
+            {/* عنوان دعا (در موبایل هنگام فعال شدن ابزار مخفی می‌شود تا جا باز شود) */}
+            <div className={`flex items-center gap-2 overflow-hidden transition-all ${activeTool ? 'hidden md:flex' : 'flex'}`}>
               <Link to="/prayers" className="bg-white bg-opacity-20 p-2 rounded-full hover:bg-opacity-30 transition flex-shrink-0" title="بازگشت به لیست">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
               </Link>
               <h1 className="font-bold text-theme-accent truncate text-sm md:text-xl">{prayer.title}</h1>
             </div>
             
-            <div className={`flex items-center bg-white bg-opacity-10 px-2 py-1.5 md:px-3 md:py-2 rounded-xl transition-all duration-300 ${activeTool ? 'w-full md:w-auto flex-1 md:flex-none justify-between' : 'flex-shrink-0'}`}>
+            {/* بخش ابزارها (کادر تنظیمات) */}
+            <div className={`flex items-center transition-all duration-300 ${activeTool ? 'w-full md:w-auto flex-1 md:flex-none justify-between bg-transparent p-0 md:bg-white md:bg-opacity-10 md:px-3 md:py-2 md:rounded-xl' : 'bg-white bg-opacity-10 px-2 py-1.5 md:px-3 md:py-2 rounded-xl flex-shrink-0'}`}>
               
               {/* ابزار جستجو */}
               {(!activeTool || activeTool === 'search') && (
-                <div className={`flex items-center transition-all duration-300 ${activeTool === 'search' ? 'w-full md:w-80 bg-white bg-opacity-20 rounded-lg px-2' : 'w-auto'}`}>
+                <div className={`flex items-center transition-all duration-300 ${activeTool === 'search' ? 'w-full md:w-80 bg-white bg-opacity-20 backdrop-blur-sm rounded-full px-3 py-1' : 'w-auto'}`}>
                   {activeTool === 'search' ? (
-                    <div className="flex items-center w-full gap-1.5 py-1 animate-fade-in">
+                    <div className="flex items-center w-full gap-2 py-0.5 animate-fade-in">
                       <button onClick={() => {setActiveTool(null); setSearchResults([]); setSearchQuery('');}} className="text-red-400 hover:text-red-500 p-1 shrink-0">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                       </button>
 
                       {searchResults.length > 0 ? (
-                        <div className="flex items-center gap-1 text-white bg-black bg-opacity-20 rounded-lg px-1.5 py-0.5 shrink-0" dir="ltr">
-                          <button onClick={nextResult} className="hover:text-theme-accent p-0.5"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg></button>
-                          <span className="text-xs font-bold pt-0.5">{currentSearchIndex + 1}/{searchResults.length}</span>
-                          <button onClick={prevResult} className="hover:text-theme-accent p-0.5"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" /></svg></button>
-                        </div>
+                        <>
+                          <div className="flex items-center gap-1 text-white bg-black bg-opacity-30 rounded-full px-2 py-1 shrink-0" dir="ltr">
+                            <button onClick={nextResult} className="hover:text-theme-accent p-0.5"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg></button>
+                            <span className="text-xs font-bold pt-0.5 min-w-[30px] text-center">{currentSearchIndex + 1}/{searchResults.length}</span>
+                            <button onClick={prevResult} className="hover:text-theme-accent p-0.5"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" /></svg></button>
+                          </div>
+                          <div className="flex-1 text-white text-sm text-right px-2 truncate opacity-70">{searchQuery}</div>
+                        </>
                       ) : (
-                        <button onClick={handleSearch} className="text-green-400 hover:text-green-500 p-1 shrink-0">
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        </button>
+                        <>
+                          <button onClick={handleSearch} className="text-green-400 hover:text-green-500 p-1 shrink-0">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                          </button>
+                          <input 
+                            type="text" value={searchQuery} onChange={onSearchChange} 
+                            placeholder="کلمه مورد نظر..." 
+                            className="bg-transparent text-white text-sm font-bold outline-none w-full text-right placeholder-white placeholder-opacity-70"
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()} autoFocus
+                          />
+                        </>
                       )}
-
-                      <input 
-                        type="text" value={searchQuery} onChange={onSearchChange} 
-                        placeholder="کلمه مورد نظر..." 
-                        className="bg-transparent text-white text-sm outline-none w-full text-right placeholder-gray-300"
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()} autoFocus
-                      />
                     </div>
                   ) : (
                     <button onClick={() => {setActiveTool('search'); setJumpNumber('');}} className="flex items-center gap-1.5 text-white hover:text-theme-accent transition p-1">
@@ -221,9 +233,9 @@ export default function SinglePrayer() {
 
               {/* ابزار پرش */}
               {(!activeTool || activeTool === 'jump') && (
-                <div className={`flex items-center transition-all duration-300 ${activeTool === 'jump' ? 'w-full md:w-56 bg-white bg-opacity-20 rounded-lg px-2' : 'w-auto'}`}>
+                <div className={`flex items-center transition-all duration-300 ${activeTool === 'jump' ? 'w-full md:w-64 bg-white bg-opacity-20 backdrop-blur-sm rounded-full px-3 py-1' : 'w-auto'}`}>
                   {activeTool === 'jump' ? (
-                    <div className="flex items-center w-full gap-1.5 py-1 animate-fade-in">
+                    <div className="flex items-center w-full gap-2 py-0.5 animate-fade-in">
                       <button onClick={() => {setActiveTool(null); setJumpNumber('');}} className="text-red-400 hover:text-red-500 p-1 shrink-0">
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                       </button>
@@ -231,9 +243,9 @@ export default function SinglePrayer() {
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
                       </button>
                       <input 
-                        type="text" value={jumpNumber} onChange={onJumpChange} dir="ltr"
+                        type="text" inputMode="numeric" value={jumpNumber} onChange={onJumpChange} 
                         placeholder="شماره فراز..." 
-                        className="bg-transparent text-white text-sm outline-none w-full text-right placeholder-gray-300"
+                        className="bg-transparent text-white text-sm font-bold outline-none w-full text-center placeholder-white placeholder-opacity-70"
                         onKeyDown={(e) => e.key === 'Enter' && handleJump()} autoFocus
                       />
                     </div>
@@ -248,7 +260,7 @@ export default function SinglePrayer() {
 
               {!activeTool && <div className="w-px h-4 bg-white bg-opacity-30 mx-2"></div>}
 
-              {/* تنظیمات اصلی (در موبایل هنگام فعال بودن ابزار مخفی می‌شود تا جا باز شود) */}
+              {/* تنظیمات اصلی (در موبایل هنگام فعال بودن ابزارها مخفی می‌شود) */}
               <div className={`flex md:hidden items-center gap-2.5 font-bold ${activeTool ? 'hidden' : ''}`}>
                 <div className="relative flex items-center justify-center w-6 h-6 text-white hover:text-theme-accent transition">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -303,12 +315,13 @@ export default function SinglePrayer() {
           </div>
         </div>
 
-        {/* نوار کنترل پایین */}
+        {/* نوار کنترل پایین - افزایش سرعت به 20 */}
         <div className="fixed bottom-0 left-0 right-0 w-full z-[9999] bg-theme-surface border-t border-theme-primary border-opacity-20 p-2.5 md:p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.15)] flex flex-row flex-nowrap justify-between md:justify-center items-center gap-2 md:gap-4 transition-all">
           <div className="flex flex-1 md:flex-none items-center gap-2 bg-theme-bg px-3 md:px-4 py-2 rounded-full border border-theme-primary border-opacity-10 shadow-inner">
             <label className="hidden md:block text-xs font-bold text-theme-textMuted whitespace-nowrap">تنظیم سرعت:</label>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:hidden text-theme-textMuted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <input type="range" min="0.1" max="10" step="0.1" value={scrollSpeed} onChange={(e) => setScrollSpeed(Number(e.target.value))} className="w-full md:w-40 accent-theme-primary cursor-pointer" dir="ltr" />
+            {/* حداکثر سرعت روی 20 تنظیم شد تا در موبایل بسیار سریع باشد */}
+            <input type="range" min="0.1" max="20" step="0.1" value={scrollSpeed} onChange={(e) => setScrollSpeed(Number(e.target.value))} className="w-full md:w-40 accent-theme-primary cursor-pointer" dir="ltr" />
           </div>
           <button onClick={() => setIsAutoScrolling(!isAutoScrolling)} className={`px-4 md:px-6 py-2 md:py-2.5 rounded-full font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 md:gap-2 text-sm md:text-base whitespace-nowrap flex-shrink-0 ${isAutoScrolling ? 'bg-red-500 text-white' : 'bg-theme-primary text-white'}`}>
             {isAutoScrolling ? <><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg> توقف</> : <><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> حرکت خودکار</>}
@@ -345,7 +358,6 @@ export default function SinglePrayer() {
           <div 
             key={idx} 
             ref={(el) => (stanzaRefs.current[idx] = el)} 
-            // در صورت پیدا شدن نتیجه جستجو، کادر آن فراز هایلایت می‌شود
             className={`mb-10 text-center border-b border-opacity-10 border-theme-primary pb-8 last:border-0 transition-all duration-500 ${activeTool === 'search' && searchResults[currentSearchIndex] === idx ? 'bg-theme-accent bg-opacity-10 ring-1 ring-theme-accent rounded-2xl p-4 scale-[1.02] shadow-sm' : ''}`}
           >
             {showArabic && (
@@ -356,6 +368,17 @@ export default function SinglePrayer() {
             {showTranslation && <p className="text-sm md:text-base text-theme-textMuted leading-loose mt-4">{stanza.p}</p>}
           </div>
         ))}
+
+        {/* دکمه بازگشت به صفحه اصلی در انتهای دعا */}
+        <div className="mt-16 mb-8 flex justify-center animate-fade-up">
+           <Link to="/" className="bg-theme-primary text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center gap-3">
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+               <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+             </svg>
+             بازگشت به صفحه اصلی
+           </Link>
+        </div>
+
       </div>
     </div>
   );
